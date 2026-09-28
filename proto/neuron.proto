@@ -1,0 +1,94 @@
+syntax = "proto3";
+
+package neuron.v1;
+
+option go_package = "github.com/matteus8/neuron-cupboard-core/proto/gen/go/neuron/v1;neuronv1";
+
+// OperationalMode represents high-level swarm behavior (Bits 0-1 of the discrete state vector).
+enum OperationalMode {
+  MODE_UNSPECIFIED = 0;
+  MODE_SEARCH = 1;           // Dispersed optical search pattern
+  MODE_FORMATION_LOCK = 2;   // Bearing-locked synchronized formation
+  MODE_DISPERSAL = 3;        // Tactical scatter / collision avoidance
+}
+
+// OpticalLockStatus represents line-of-sight tracking quality (Bits 2-3 of the discrete state vector).
+enum OpticalLockStatus {
+  LOCK_NONE = 0;             // No line-of-sight emitter detected
+  LOCK_ACQUIRING = 1;        // Intermittent 850nm pulse detected, acquiring lock
+  LOCK_BEARING_TRACKING = 2; // Continuous optical centroid bearing tracking
+  LOCK_HARD_LOCKED = 3;      // Fully locked, two-way optical handshake confirmed
+}
+
+// DiscreteStateVector represents the compact 8-bit state vector transmitted over the optical link.
+// Bit Allocation:
+//   Bit [0:1] - OperationalMode (2 bits: 0-3)
+//   Bit [2:3] - OpticalLockStatus (2 bits: 0-3)
+//   Bit [4]   - Consensus ACK flag (1 bit: 0x10)
+//   Bit [5]   - Proximity alert flag (1 bit: 0x20)
+//   Bit [6]   - SWaP critical alert flag (1 bit: 0x40)
+//   Bit [7]   - Frame sync marker flag (1 bit: 0x80)
+message DiscreteStateVector {
+  // Raw 8-bit wire byte [0-255]
+  uint32 raw_byte = 1;
+
+  // Decoded discrete fields
+  OperationalMode mode = 2;
+  OpticalLockStatus lock_status = 3;
+  bool consensus_ack = 4;
+  bool proximity_alert = 5;
+  bool swap_critical = 6;
+  bool sync_marker = 7;
+}
+
+// OpticalBearing describes the spatial vector of an observed Bamboo Node relative to the optical axis.
+// Fixed-point integers ensure cross-platform determinism without floating-point drift.
+message OpticalBearing {
+  // Azimuth angle in milliradians (-3141 to +3141) relative to camera boresight
+  int32 azimuth_mrad = 1;
+
+  // Elevation angle in milliradians (-3141 to +3141) relative to camera boresight
+  int32 elevation_mrad = 2;
+
+  // Estimated range in millimeters (derived from blob apparent size / pulse intensity)
+  uint32 range_mm = 3;
+
+  // Normalized centroid pixel luminance intensity (0-255)
+  uint32 centroid_intensity = 4;
+}
+
+// Neuron is the fundamental state packet transmitted over modulated 850nm IR Manchester pulse trains.
+message Neuron {
+  // Unique identifier of transmitting Bamboo Node (1-255)
+  uint32 node_id = 1;
+
+  // Monotonically increasing packet sequence counter (0-65535)
+  uint32 sequence_num = 2;
+
+  // Compact 8-bit discrete state vector
+  DiscreteStateVector state = 3;
+
+  // Local optical bearing observed by the receiving node (populated during ingest)
+  OpticalBearing bearing = 4;
+
+  // Link-layer CRC-8 for error detection (polynomial 0x07)
+  uint32 crc8 = 5;
+
+  // Microsecond timestamp (monotonic tick)
+  uint64 timestamp_us = 6;
+}
+
+// TheCupboard represents the decentralized swarm consensus state shared among active nodes.
+message TheCupboard {
+  // Current consensus epoch
+  uint32 consensus_epoch = 1;
+
+  // Total active Bamboo Nodes in optical line-of-sight
+  uint32 active_node_count = 2;
+
+  // Latest discrete states of all tracked swarm nodes
+  repeated Neuron node_states = 3;
+
+  // Edge timestamp of the latest consensus update in microseconds
+  uint64 updated_at_us = 4;
+}

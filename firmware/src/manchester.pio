@@ -1,0 +1,50 @@
+;
+; Copyright (c) Neuron Cupboard Core
+; Physical-Layer 850nm IR Manchester Transmitter for RP2040 PIO
+;
+; Transmits Manchester half-bit chips with zero CPU overhead and sub-microsecond
+; cycle-accurate determinism.
+;
+
+.program manchester_tx
+.side_set 0
+
+; Pin mapping:
+;   OUT pin 0 -> GPIO 15 (850nm IR emitter FET gate)
+; Autopull disabled; explicitly pull 32-bit chip words.
+
+.wrap_target
+    pull block          ; Wait for data in TX FIFO. When idle, pin remains low.
+    set x, 31           ; 32 half-bit chips per FIFO word
+chip_loop:
+    out pins, 1 [1]     ; Output 1 chip to IR LED FET, hold for 2 cycles
+    jmp x-- chip_loop   ; Decrement chip counter (1 cycle). Total = 3 cycles per chip.
+.wrap
+
+% c-sdk {
+#include "hardware/clocks.h"
+#include "hardware/pio.h"
+
+static inline void manchester_tx_program_init(PIO pio, uint sm, uint offset, uint pin, float baud_rate) {
+    pio_sm_config c = manchester_tx_program_get_default_config(offset);
+
+    // Map OUT pin to target GPIO
+    sm_config_set_out_pins(&c, pin, 1);
+    pio_gpio_init(pio, pin);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+
+    // Shift left (MSB first), manual pull
+    sm_config_set_out_shift(&c, false, false, 32);
+
+    // Clock divider: 3 cycles per chip, 2 chips per bit
+    // freq = baud_rate * 2 chips/bit * 3 cycles/chip
+    float target_freq = baud_rate * 6.0f;
+    float div = (float)clock_get_hz(clk_sys) / target_freq;
+    sm_config_set_clkdiv(&c, div);
+
+    // Clear FIFO and start SM
+    pio_sm_clear_fifos(pio, sm);
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}

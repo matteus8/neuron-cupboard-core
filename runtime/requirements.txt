@@ -1,0 +1,4 @@
+# Edge dependencies for Raspberry Pi 5 Panda Runtime
+# Target: headless Debian/Raspberry Pi OS on ARM64
+opencv-python-headless>=4.8.0
+numpy>=1.24.0

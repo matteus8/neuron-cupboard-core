@@ -1,0 +1,34 @@
+# Binaries and build outputs
+build/
+bin/
+dist/
+*.o
+*.a
+*.so
+*.dylib
+*.elf
+*.hex
+*.bin
+*.uf2
+*.map
+
+# Go
+*.test
+*.out
+go.work
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# OS / Tooling
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*~
