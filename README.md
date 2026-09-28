@@ -9,6 +9,12 @@ Physical-layer optical transceiver payloads (**Bamboo Nodes**) and deterministic
 * **`runtime/`**: Raspberry Pi 5 Panda Runtime (zero-bloat optical vision, pulse decoder, swarm consensus).
 * **`gateway/`**: Tactical network bridge publishing optical mesh states over Eclipse Zenoh.
 
+## Core Terminology
+* Bamboo Node: The physical transceiver payload (RP2040 microcontroller + 850nm IR LED emitter + monochrome camera + Raspberry Pi 5).
+* Neuron: The fundamental state packet transmitted over the modulated optical beam.
+* The Cupboard: The decentralized swarm consensus state shared among active nodes in optical line-of-sight.
+* Panda Runtime: The deterministic edge execution engine running on the Raspberry Pi 5.
+
 ## Quick Start
 
 ```bash
