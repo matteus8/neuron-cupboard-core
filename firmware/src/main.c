@@ -76,6 +76,8 @@ int main(void) {
 #ifdef PICO_BOARD
         sleep_ms(BEACON_INTERVAL_MS);
 #else
+        printf("level=INFO event=bamboo_node_sim_complete node_id=%d seq_num=%d crc8=0x%02X chips_emitted=%d\n",
+               frame.node_id, frame.seq_num, frame.crc8, tx.chip_count);
         break; /* Exit simulation */
 #endif
     }

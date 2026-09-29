@@ -4,7 +4,7 @@ CC ?= cc
 CFLAGS ?= -Wall -Wextra -Werror -std=c99 -O2
 SEC_CFLAGS ?= -Wall -Wextra -Werror -Wformat -Wformat-security -Wconversion -std=c99 -O2
 
-.PHONY: all proto test build clean test-proto test-firmware test-runtime test-gateway test-sim bench sast sast-go sast-python sast-c release-build
+.PHONY: all proto test build build-firmware clean test-proto test-firmware test-runtime test-gateway test-sim bench sast sast-go sast-python sast-c release-build
 
 all: proto test build
 
@@ -69,11 +69,22 @@ sast-c:
 	@$(CC) $(SEC_CFLAGS) -Ifirmware/include -Iproto/c firmware/src/manchester.c firmware/test/test_manchester.c -o /tmp/c_sast_manchester && /tmp/c_sast_manchester && rm -f /tmp/c_sast_manchester
 	@echo "  [OK] C static security audit clean."
 
-build:
+build: build-firmware
 	@echo "==> Building Gateway..."
 	@mkdir -p bin
 	@cd gateway && go build -o ../bin/gateway .
 	@echo "  [OK] bin/gateway created"
+
+build-firmware:
+	@mkdir -p bin
+	@if [ -n "$$PICO_SDK_PATH" ] && command -v cmake >/dev/null 2>&1; then \
+		echo "==> Building RP2040 firmware (Pico SDK)..."; \
+		mkdir -p firmware/build && cd firmware/build && cmake .. && cmake --build . && cp -f bamboo_node.uf2 ../../bin/ 2>/dev/null || true; \
+	else \
+		echo "==> Building firmware host simulation binary..."; \
+		$(CC) $(CFLAGS) -Ifirmware/include -Iproto/c firmware/src/manchester.c firmware/src/main.c -o bin/bamboo_node_sim; \
+		echo "  [OK] bin/bamboo_node_sim created"; \
+	fi
 
 release-build:
 	@echo "==> Cross-compiling lightweight standalone native binaries..."
@@ -86,6 +97,6 @@ release-build:
 	@ls -lh bin/
 
 clean:
-	@rm -rf bin/ /tmp/neuron_wire_test /tmp/neuron_crc8_robust_test /tmp/test_manchester /tmp/test_bamboo_pio /tmp/neuron_gateway
+	@rm -rf bin/ firmware/build /tmp/neuron_wire_test /tmp/neuron_crc8_robust_test /tmp/test_manchester /tmp/test_bamboo_pio /tmp/neuron_gateway /tmp/bamboo_node_sim
 	@find . -type d -name "__pycache__" -exec rm -rf {} +
 	@echo "  [OK] Clean complete."
