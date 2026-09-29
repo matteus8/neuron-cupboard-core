@@ -92,7 +92,7 @@ release-build:
 	@cd gateway && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o ../bin/gateway-linux-arm64 .
 	@cd gateway && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o ../bin/gateway-linux-amd64 .
 	@cd gateway && CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o ../bin/gateway-darwin-arm64 .
-	@cd bin && shasum -a 256 gateway-* > checksums.sha256
+	@cd bin && if command -v sha256sum >/dev/null 2>&1; then sha256sum gateway-* > checksums.sha256; else shasum -a 256 gateway-* > checksums.sha256; fi
 	@echo "  [OK] Release artifacts generated in bin/:"
 	@ls -lh bin/
 
