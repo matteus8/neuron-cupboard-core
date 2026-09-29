@@ -127,6 +127,62 @@ func (OpticalLockStatus) EnumDescriptor() ([]byte, []int) {
 	return file_neuron_proto_rawDescGZIP(), []int{1}
 }
 
+// CommandType represents tactical command directives injected via Zenoh gateway.
+type CommandType int32
+
+const (
+	CommandType_CMD_UNSPECIFIED        CommandType = 0
+	CommandType_CMD_SET_MODE_SEARCH    CommandType = 1 // Command swarm into dispersed optical search
+	CommandType_CMD_SET_MODE_FORMATION CommandType = 2 // Command swarm into bearing-locked formation
+	CommandType_CMD_SET_MODE_DISPERSAL CommandType = 3 // Emergency tactical scatter / collision break
+	CommandType_CMD_EMISSION_SILENCE   CommandType = 4 // Optical blackout / cease IR modulation
+)
+
+// Enum value maps for CommandType.
+var (
+	CommandType_name = map[int32]string{
+		0: "CMD_UNSPECIFIED",
+		1: "CMD_SET_MODE_SEARCH",
+		2: "CMD_SET_MODE_FORMATION",
+		3: "CMD_SET_MODE_DISPERSAL",
+		4: "CMD_EMISSION_SILENCE",
+	}
+	CommandType_value = map[string]int32{
+		"CMD_UNSPECIFIED":        0,
+		"CMD_SET_MODE_SEARCH":    1,
+		"CMD_SET_MODE_FORMATION": 2,
+		"CMD_SET_MODE_DISPERSAL": 3,
+		"CMD_EMISSION_SILENCE":   4,
+	}
+)
+
+func (x CommandType) Enum() *CommandType {
+	p := new(CommandType)
+	*p = x
+	return p
+}
+
+func (x CommandType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (CommandType) Descriptor() protoreflect.EnumDescriptor {
+	return file_neuron_proto_enumTypes[2].Descriptor()
+}
+
+func (CommandType) Type() protoreflect.EnumType {
+	return &file_neuron_proto_enumTypes[2]
+}
+
+func (x CommandType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use CommandType.Descriptor instead.
+func (CommandType) EnumDescriptor() ([]byte, []int) {
+	return file_neuron_proto_rawDescGZIP(), []int{2}
+}
+
 // DiscreteStateVector represents the compact 8-bit state vector transmitted over the optical link.
 // Bit Allocation:
 //
@@ -468,6 +524,88 @@ func (x *TheCupboard) GetUpdatedAtUs() uint64 {
 	return 0
 }
 
+// SwarmCommand represents external tactical tasking published across Zenoh.
+type SwarmCommand struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Target node ID (0 = swarm broadcast to all nodes)
+	TargetNodeId uint32 `protobuf:"varint,1,opt,name=target_node_id,json=targetNodeId,proto3" json:"target_node_id,omitempty"`
+	// Monotonic command sequence counter
+	CommandSeq uint32 `protobuf:"varint,2,opt,name=command_seq,json=commandSeq,proto3" json:"command_seq,omitempty"`
+	// Directed command action
+	CommandType CommandType `protobuf:"varint,3,opt,name=command_type,json=commandType,proto3,enum=neuron.v1.CommandType" json:"command_type,omitempty"`
+	// Originator identifier (e.g. Ground Control Station or Tactical Relay ID)
+	IssuerId uint32 `protobuf:"varint,4,opt,name=issuer_id,json=issuerId,proto3" json:"issuer_id,omitempty"`
+	// Command issuance timestamp in microseconds
+	IssuedAtUs    uint64 `protobuf:"varint,5,opt,name=issued_at_us,json=issuedAtUs,proto3" json:"issued_at_us,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SwarmCommand) Reset() {
+	*x = SwarmCommand{}
+	mi := &file_neuron_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SwarmCommand) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SwarmCommand) ProtoMessage() {}
+
+func (x *SwarmCommand) ProtoReflect() protoreflect.Message {
+	mi := &file_neuron_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SwarmCommand.ProtoReflect.Descriptor instead.
+func (*SwarmCommand) Descriptor() ([]byte, []int) {
+	return file_neuron_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *SwarmCommand) GetTargetNodeId() uint32 {
+	if x != nil {
+		return x.TargetNodeId
+	}
+	return 0
+}
+
+func (x *SwarmCommand) GetCommandSeq() uint32 {
+	if x != nil {
+		return x.CommandSeq
+	}
+	return 0
+}
+
+func (x *SwarmCommand) GetCommandType() CommandType {
+	if x != nil {
+		return x.CommandType
+	}
+	return CommandType_CMD_UNSPECIFIED
+}
+
+func (x *SwarmCommand) GetIssuerId() uint32 {
+	if x != nil {
+		return x.IssuerId
+	}
+	return 0
+}
+
+func (x *SwarmCommand) GetIssuedAtUs() uint64 {
+	if x != nil {
+		return x.IssuedAtUs
+	}
+	return 0
+}
+
 var File_neuron_proto protoreflect.FileDescriptor
 
 const file_neuron_proto_rawDesc = "" +
@@ -500,7 +638,15 @@ const file_neuron_proto_rawDesc = "" +
 	"\x11active_node_count\x18\x02 \x01(\rR\x0factiveNodeCount\x122\n" +
 	"\vnode_states\x18\x03 \x03(\v2\x11.neuron.v1.NeuronR\n" +
 	"nodeStates\x12\"\n" +
-	"\rupdated_at_us\x18\x04 \x01(\x04R\vupdatedAtUs*e\n" +
+	"\rupdated_at_us\x18\x04 \x01(\x04R\vupdatedAtUs\"\xcf\x01\n" +
+	"\fSwarmCommand\x12$\n" +
+	"\x0etarget_node_id\x18\x01 \x01(\rR\ftargetNodeId\x12\x1f\n" +
+	"\vcommand_seq\x18\x02 \x01(\rR\n" +
+	"commandSeq\x129\n" +
+	"\fcommand_type\x18\x03 \x01(\x0e2\x16.neuron.v1.CommandTypeR\vcommandType\x12\x1b\n" +
+	"\tissuer_id\x18\x04 \x01(\rR\bissuerId\x12 \n" +
+	"\fissued_at_us\x18\x05 \x01(\x04R\n" +
+	"issuedAtUs*e\n" +
 	"\x0fOperationalMode\x12\x14\n" +
 	"\x10MODE_UNSPECIFIED\x10\x00\x12\x0f\n" +
 	"\vMODE_SEARCH\x10\x01\x12\x17\n" +
@@ -510,7 +656,13 @@ const file_neuron_proto_rawDesc = "" +
 	"\tLOCK_NONE\x10\x00\x12\x12\n" +
 	"\x0eLOCK_ACQUIRING\x10\x01\x12\x19\n" +
 	"\x15LOCK_BEARING_TRACKING\x10\x02\x12\x14\n" +
-	"\x10LOCK_HARD_LOCKED\x10\x03BJZHgithub.com/matteus8/neuron-cupboard-core/proto/gen/go/neuron/v1;neuronv1b\x06proto3"
+	"\x10LOCK_HARD_LOCKED\x10\x03*\x8d\x01\n" +
+	"\vCommandType\x12\x13\n" +
+	"\x0fCMD_UNSPECIFIED\x10\x00\x12\x17\n" +
+	"\x13CMD_SET_MODE_SEARCH\x10\x01\x12\x1a\n" +
+	"\x16CMD_SET_MODE_FORMATION\x10\x02\x12\x1a\n" +
+	"\x16CMD_SET_MODE_DISPERSAL\x10\x03\x12\x18\n" +
+	"\x14CMD_EMISSION_SILENCE\x10\x04BJZHgithub.com/matteus8/neuron-cupboard-core/proto/gen/go/neuron/v1;neuronv1b\x06proto3"
 
 var (
 	file_neuron_proto_rawDescOnce sync.Once
@@ -524,27 +676,30 @@ func file_neuron_proto_rawDescGZIP() []byte {
 	return file_neuron_proto_rawDescData
 }
 
-var file_neuron_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_neuron_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_neuron_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_neuron_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_neuron_proto_goTypes = []any{
 	(OperationalMode)(0),        // 0: neuron.v1.OperationalMode
 	(OpticalLockStatus)(0),      // 1: neuron.v1.OpticalLockStatus
-	(*DiscreteStateVector)(nil), // 2: neuron.v1.DiscreteStateVector
-	(*OpticalBearing)(nil),      // 3: neuron.v1.OpticalBearing
-	(*Neuron)(nil),              // 4: neuron.v1.Neuron
-	(*TheCupboard)(nil),         // 5: neuron.v1.TheCupboard
+	(CommandType)(0),            // 2: neuron.v1.CommandType
+	(*DiscreteStateVector)(nil), // 3: neuron.v1.DiscreteStateVector
+	(*OpticalBearing)(nil),      // 4: neuron.v1.OpticalBearing
+	(*Neuron)(nil),              // 5: neuron.v1.Neuron
+	(*TheCupboard)(nil),         // 6: neuron.v1.TheCupboard
+	(*SwarmCommand)(nil),        // 7: neuron.v1.SwarmCommand
 }
 var file_neuron_proto_depIdxs = []int32{
 	0, // 0: neuron.v1.DiscreteStateVector.mode:type_name -> neuron.v1.OperationalMode
 	1, // 1: neuron.v1.DiscreteStateVector.lock_status:type_name -> neuron.v1.OpticalLockStatus
-	2, // 2: neuron.v1.Neuron.state:type_name -> neuron.v1.DiscreteStateVector
-	3, // 3: neuron.v1.Neuron.bearing:type_name -> neuron.v1.OpticalBearing
-	4, // 4: neuron.v1.TheCupboard.node_states:type_name -> neuron.v1.Neuron
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	3, // 2: neuron.v1.Neuron.state:type_name -> neuron.v1.DiscreteStateVector
+	4, // 3: neuron.v1.Neuron.bearing:type_name -> neuron.v1.OpticalBearing
+	5, // 4: neuron.v1.TheCupboard.node_states:type_name -> neuron.v1.Neuron
+	2, // 5: neuron.v1.SwarmCommand.command_type:type_name -> neuron.v1.CommandType
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_neuron_proto_init() }
@@ -557,8 +712,8 @@ func file_neuron_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_neuron_proto_rawDesc), len(file_neuron_proto_rawDesc)),
-			NumEnums:      2,
-			NumMessages:   4,
+			NumEnums:      3,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

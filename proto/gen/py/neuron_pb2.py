@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cneuron.proto\x12\tneuron.v1\"\xe0\x01\n\x13\x44iscreteStateVector\x12\x10\n\x08raw_byte\x18\x01 \x01(\r\x12(\n\x04mode\x18\x02 \x01(\x0e\x32\x1a.neuron.v1.OperationalMode\x12\x31\n\x0block_status\x18\x03 \x01(\x0e\x32\x1c.neuron.v1.OpticalLockStatus\x12\x15\n\rconsensus_ack\x18\x04 \x01(\x08\x12\x17\n\x0fproximity_alert\x18\x05 \x01(\x08\x12\x15\n\rswap_critical\x18\x06 \x01(\x08\x12\x13\n\x0bsync_marker\x18\x07 \x01(\x08\"l\n\x0eOpticalBearing\x12\x14\n\x0c\x61zimuth_mrad\x18\x01 \x01(\x05\x12\x16\n\x0e\x65levation_mrad\x18\x02 \x01(\x05\x12\x10\n\x08range_mm\x18\x03 \x01(\r\x12\x1a\n\x12\x63\x65ntroid_intensity\x18\x04 \x01(\r\"\xae\x01\n\x06Neuron\x12\x0f\n\x07node_id\x18\x01 \x01(\r\x12\x14\n\x0csequence_num\x18\x02 \x01(\r\x12-\n\x05state\x18\x03 \x01(\x0b\x32\x1e.neuron.v1.DiscreteStateVector\x12*\n\x07\x62\x65\x61ring\x18\x04 \x01(\x0b\x32\x19.neuron.v1.OpticalBearing\x12\x0c\n\x04\x63rc8\x18\x05 \x01(\r\x12\x14\n\x0ctimestamp_us\x18\x06 \x01(\x04\"\x80\x01\n\x0bTheCupboard\x12\x17\n\x0f\x63onsensus_epoch\x18\x01 \x01(\r\x12\x19\n\x11\x61\x63tive_node_count\x18\x02 \x01(\r\x12&\n\x0bnode_states\x18\x03 \x03(\x0b\x32\x11.neuron.v1.Neuron\x12\x15\n\rupdated_at_us\x18\x04 \x01(\x04*e\n\x0fOperationalMode\x12\x14\n\x10MODE_UNSPECIFIED\x10\x00\x12\x0f\n\x0bMODE_SEARCH\x10\x01\x12\x17\n\x13MODE_FORMATION_LOCK\x10\x02\x12\x12\n\x0eMODE_DISPERSAL\x10\x03*g\n\x11OpticalLockStatus\x12\r\n\tLOCK_NONE\x10\x00\x12\x12\n\x0eLOCK_ACQUIRING\x10\x01\x12\x19\n\x15LOCK_BEARING_TRACKING\x10\x02\x12\x14\n\x10LOCK_HARD_LOCKED\x10\x03\x42JZHgithub.com/matteus8/neuron-cupboard-core/proto/gen/go/neuron/v1;neuronv1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cneuron.proto\x12\tneuron.v1\"\xe0\x01\n\x13\x44iscreteStateVector\x12\x10\n\x08raw_byte\x18\x01 \x01(\r\x12(\n\x04mode\x18\x02 \x01(\x0e\x32\x1a.neuron.v1.OperationalMode\x12\x31\n\x0block_status\x18\x03 \x01(\x0e\x32\x1c.neuron.v1.OpticalLockStatus\x12\x15\n\rconsensus_ack\x18\x04 \x01(\x08\x12\x17\n\x0fproximity_alert\x18\x05 \x01(\x08\x12\x15\n\rswap_critical\x18\x06 \x01(\x08\x12\x13\n\x0bsync_marker\x18\x07 \x01(\x08\"l\n\x0eOpticalBearing\x12\x14\n\x0c\x61zimuth_mrad\x18\x01 \x01(\x05\x12\x16\n\x0e\x65levation_mrad\x18\x02 \x01(\x05\x12\x10\n\x08range_mm\x18\x03 \x01(\r\x12\x1a\n\x12\x63\x65ntroid_intensity\x18\x04 \x01(\r\"\xae\x01\n\x06Neuron\x12\x0f\n\x07node_id\x18\x01 \x01(\r\x12\x14\n\x0csequence_num\x18\x02 \x01(\r\x12-\n\x05state\x18\x03 \x01(\x0b\x32\x1e.neuron.v1.DiscreteStateVector\x12*\n\x07\x62\x65\x61ring\x18\x04 \x01(\x0b\x32\x19.neuron.v1.OpticalBearing\x12\x0c\n\x04\x63rc8\x18\x05 \x01(\r\x12\x14\n\x0ctimestamp_us\x18\x06 \x01(\x04\"\x80\x01\n\x0bTheCupboard\x12\x17\n\x0f\x63onsensus_epoch\x18\x01 \x01(\r\x12\x19\n\x11\x61\x63tive_node_count\x18\x02 \x01(\r\x12&\n\x0bnode_states\x18\x03 \x03(\x0b\x32\x11.neuron.v1.Neuron\x12\x15\n\rupdated_at_us\x18\x04 \x01(\x04\"\x92\x01\n\x0cSwarmCommand\x12\x16\n\x0etarget_node_id\x18\x01 \x01(\r\x12\x13\n\x0b\x63ommand_seq\x18\x02 \x01(\r\x12,\n\x0c\x63ommand_type\x18\x03 \x01(\x0e\x32\x16.neuron.v1.CommandType\x12\x11\n\tissuer_id\x18\x04 \x01(\r\x12\x14\n\x0cissued_at_us\x18\x05 \x01(\x04*e\n\x0fOperationalMode\x12\x14\n\x10MODE_UNSPECIFIED\x10\x00\x12\x0f\n\x0bMODE_SEARCH\x10\x01\x12\x17\n\x13MODE_FORMATION_LOCK\x10\x02\x12\x12\n\x0eMODE_DISPERSAL\x10\x03*g\n\x11OpticalLockStatus\x12\r\n\tLOCK_NONE\x10\x00\x12\x12\n\x0eLOCK_ACQUIRING\x10\x01\x12\x19\n\x15LOCK_BEARING_TRACKING\x10\x02\x12\x14\n\x10LOCK_HARD_LOCKED\x10\x03*\x8d\x01\n\x0b\x43ommandType\x12\x13\n\x0f\x43MD_UNSPECIFIED\x10\x00\x12\x17\n\x13\x43MD_SET_MODE_SEARCH\x10\x01\x12\x1a\n\x16\x43MD_SET_MODE_FORMATION\x10\x02\x12\x1a\n\x16\x43MD_SET_MODE_DISPERSAL\x10\x03\x12\x18\n\x14\x43MD_EMISSION_SILENCE\x10\x04\x42JZHgithub.com/matteus8/neuron-cupboard-core/proto/gen/go/neuron/v1;neuronv1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,10 +32,12 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'neuron_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'ZHgithub.com/matteus8/neuron-cupboard-core/proto/gen/go/neuron/v1;neuronv1'
-  _globals['_OPERATIONALMODE']._serialized_start=672
-  _globals['_OPERATIONALMODE']._serialized_end=773
-  _globals['_OPTICALLOCKSTATUS']._serialized_start=775
-  _globals['_OPTICALLOCKSTATUS']._serialized_end=878
+  _globals['_OPERATIONALMODE']._serialized_start=821
+  _globals['_OPERATIONALMODE']._serialized_end=922
+  _globals['_OPTICALLOCKSTATUS']._serialized_start=924
+  _globals['_OPTICALLOCKSTATUS']._serialized_end=1027
+  _globals['_COMMANDTYPE']._serialized_start=1030
+  _globals['_COMMANDTYPE']._serialized_end=1171
   _globals['_DISCRETESTATEVECTOR']._serialized_start=28
   _globals['_DISCRETESTATEVECTOR']._serialized_end=252
   _globals['_OPTICALBEARING']._serialized_start=254
@@ -44,4 +46,6 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_NEURON']._serialized_end=539
   _globals['_THECUPBOARD']._serialized_start=542
   _globals['_THECUPBOARD']._serialized_end=670
+  _globals['_SWARMCOMMAND']._serialized_start=673
+  _globals['_SWARMCOMMAND']._serialized_end=819
 # @@protoc_insertion_point(module_scope)

@@ -125,3 +125,48 @@ func TestGatewayRelayUDPListener(t *testing.T) {
 	}
 }
 
+func TestIngestAndRelayTacticalCommand(t *testing.T) {
+	capture := &TestZenohCapture{}
+	cfg := RelayConfig{}
+	relay := NewGatewayRelay(cfg, capture)
+
+	cmd := &neuronv1.SwarmCommand{
+		TargetNodeId: 77,
+		CommandSeq:   5,
+		CommandType:  neuronv1.CommandType_CMD_SET_MODE_DISPERSAL,
+		IssuerId:     999,
+		IssuedAtUs:   uint64(time.Now().UnixMicro()),
+	}
+
+	cmdBytes, err := proto.Marshal(cmd)
+	if err != nil {
+		t.Fatalf("failed to marshal SwarmCommand: %v", err)
+	}
+
+	frame, err := relay.IngestAndRelayTacticalCommand(context.Background(), cmdBytes)
+	if err != nil {
+		t.Fatalf("failed to relay tactical command: %v", err)
+	}
+
+	if frame[0] != neuronproto.Preamble || frame[1] != neuronproto.SyncWord {
+		t.Errorf("invalid frame header: %v", frame)
+	}
+	if frame[2] != 77 {
+		t.Errorf("expected target node 77, got %d", frame[2])
+	}
+	if frame[3] != 5 {
+		t.Errorf("expected sequence 5, got %d", frame[3])
+	}
+
+	unpacked := neuronproto.UnpackState(frame[4])
+	if unpacked.Mode != neuronv1.OperationalMode_MODE_DISPERSAL {
+		t.Errorf("expected DISPERSAL mode, got %v", unpacked.Mode)
+	}
+
+	expectedCrc := neuronproto.Crc8(frame[2:5])
+	if frame[5] != expectedCrc {
+		t.Errorf("expected CRC 0x%02X, got 0x%02X", expectedCrc, frame[5])
+	}
+}
+
+

@@ -90,6 +90,47 @@ func (g *GatewayRelay) IngestAndRelayWireFrame(ctx context.Context, frameBytes [
 	return nil
 }
 
+// IngestAndRelayTacticalCommand unmarshals an external SwarmCommand Protobuf and formats a 6-byte optical frame.
+func (g *GatewayRelay) IngestAndRelayTacticalCommand(ctx context.Context, cmdBytes []byte) (*[neuronproto.WireFrameLen]byte, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
+	var cmd neuronv1.SwarmCommand
+	if err := proto.Unmarshal(cmdBytes, &cmd); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal SwarmCommand: %w", err)
+	}
+
+	nowUs := uint64(time.Now().UnixMicro())
+	var mode neuronv1.OperationalMode
+	var lock neuronv1.OpticalLockStatus = neuronv1.OpticalLockStatus_LOCK_NONE
+
+	switch cmd.CommandType {
+	case neuronv1.CommandType_CMD_SET_MODE_SEARCH:
+		mode = neuronv1.OperationalMode_MODE_SEARCH
+	case neuronv1.CommandType_CMD_SET_MODE_FORMATION:
+		mode = neuronv1.OperationalMode_MODE_FORMATION_LOCK
+		lock = neuronv1.OpticalLockStatus_LOCK_HARD_LOCKED
+	case neuronv1.CommandType_CMD_SET_MODE_DISPERSAL:
+		mode = neuronv1.OperationalMode_MODE_DISPERSAL
+	case neuronv1.CommandType_CMD_EMISSION_SILENCE:
+		mode = neuronv1.OperationalMode_MODE_UNSPECIFIED
+	default:
+		mode = neuronv1.OperationalMode_MODE_SEARCH
+	}
+
+	stateByte := neuronproto.PackState(mode, lock, false, false, false, false)
+	var wireFrame [neuronproto.WireFrameLen]byte
+	neuronproto.PackFrame(&wireFrame, byte(cmd.TargetNodeId), byte(cmd.CommandSeq), stateByte)
+
+	fmt.Fprintf(os.Stdout, "level=INFO ts=%d event=tactical_command_relayed target=%d cmd=%v wire_crc=0x%02X\n",
+		nowUs, cmd.TargetNodeId, cmd.CommandType, wireFrame[5])
+
+	return &wireFrame, nil
+}
+
 // ListenUDP runs a bounded-latency UDP server ingesting 6-byte optical frames.
 func (g *GatewayRelay) ListenUDP(ctx context.Context) error {
 	addr, err := net.ResolveUDPAddr("udp", g.config.ListenAddr)

@@ -7,6 +7,7 @@ from .vision import OpticalTracker, OpticalCentroid, CameraIntrinsics
 from .decoder import ManchesterDecoder
 from .multi_tracker import SpatialPulseTracker, OpticalTrack
 from .cupboard import TheCupboard, SwarmNodeState
+from .serial_bridge import SerialBridge
 from .engine import PandaRuntime
 
 __all__ = [
@@ -18,5 +19,6 @@ __all__ = [
     "OpticalTrack",
     "TheCupboard",
     "SwarmNodeState",
+    "SerialBridge",
     "PandaRuntime",
 ]
