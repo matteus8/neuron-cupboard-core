@@ -5,7 +5,7 @@ bitmask packing/unpacking, and deterministic CRC-8-CCITT calculations for the
 Neuron Cupboard 850nm IR optical link.
 """
 
-from typing import Tuple, NamedTuple
+from typing import Tuple, NamedTuple, List
 
 PREAMBLE: int = 0xAA
 SYNC_WORD: int = 0xD5
@@ -140,3 +140,16 @@ def unpack_frame(raw_bytes: bytes) -> Tuple[bool, WireFrame]:
         state=state,
         crc8=frame_crc,
     )
+
+
+def encode_manchester(raw_bytes: bytes, polarity: int = 0) -> List[int]:
+    """Encode raw bytes into Manchester half-bit chips (IEEE 802.3 or Thomas convention)."""
+    chips: List[int] = []
+    for b in raw_bytes:
+        for bit_pos in range(7, -1, -1):
+            bit = (b >> bit_pos) & 1
+            if polarity == 0:  # IEEE 802.3: 0 -> 10, 1 -> 01
+                chips.extend([1, 0] if bit == 0 else [0, 1])
+            else:              # Thomas: 0 -> 01, 1 -> 10
+                chips.extend([0, 1] if bit == 0 else [1, 0])
+    return chips

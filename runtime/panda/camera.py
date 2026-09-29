@@ -140,3 +140,42 @@ class OpticalCamera:
         if self.cap:
             self.cap.release()
             self.cap = None
+
+
+class DualOpticalCamera:
+    """Synchronized dual-aperture optical front-end (Fore + Aft) for 360-degree coverage."""
+
+    def __init__(
+        self,
+        fore_device_id: int = 0,
+        aft_device_id: int = 1,
+        width: int = 640,
+        height: int = 480,
+        simulate: bool = False,
+    ):
+        self.fore_cam = OpticalCamera(
+            device_id=fore_device_id,
+            width=width,
+            height=height,
+            simulate=simulate,
+        )
+        self.aft_cam = OpticalCamera(
+            device_id=aft_device_id,
+            width=width,
+            height=height,
+            simulate=simulate,
+        )
+
+    def grab_dual_frames(
+        self,
+        fore_emitters: Optional[list] = None,
+        aft_emitters: Optional[list] = None,
+    ) -> Tuple[Optional[CameraFrame], Optional[CameraFrame]]:
+        """Grab frames from both apertures with non-blocking execution."""
+        frame_fore = self.fore_cam.grab_frame(fore_emitters)
+        frame_aft = self.aft_cam.grab_frame(aft_emitters)
+        return frame_fore, frame_aft
+
+    def close(self):
+        self.fore_cam.close()
+        self.aft_cam.close()

@@ -25,6 +25,15 @@ class OpticalCentroid(NamedTuple):
     area: float
     azimuth_mrad: int
     elevation_mrad: int
+    aperture: str = "fore"
+
+    @property
+    def body_azimuth_mrad(self) -> int:
+        """Transform aperture-relative azimuth into drone body coordinate frame [-3141, +3141] mrad."""
+        if self.aperture == "aft":
+            val = self.azimuth_mrad + 3141
+            return ((val + 3141) % 6283) - 3141
+        return self.azimuth_mrad
 
 
 class CameraIntrinsics(NamedTuple):
@@ -45,11 +54,13 @@ class OpticalTracker:
         luminance_threshold: int = 180,
         min_blob_area: float = 2.0,
         max_blob_area: float = 2500.0,
+        aperture: str = "fore",
     ):
         self.intrinsics = intrinsics
         self.threshold = luminance_threshold
         self.min_area = min_blob_area
         self.max_area = max_blob_area
+        self.aperture = aperture
 
     def process_frame(self, frame_data, width: int = 0, height: int = 0) -> List[OpticalCentroid]:
         """Detect bright 850nm optical blobs and calculate spatial bearings."""
@@ -99,6 +110,7 @@ class OpticalTracker:
                 area=area,
                 azimuth_mrad=azimuth_mrad,
                 elevation_mrad=elevation_mrad,
+                aperture=self.aperture,
             ))
 
         return centroids
@@ -167,6 +179,7 @@ class OpticalTracker:
                 area=float(len(cluster)),
                 azimuth_mrad=azimuth_mrad,
                 elevation_mrad=elevation_mrad,
+                aperture=self.aperture,
             ))
 
         return centroids
