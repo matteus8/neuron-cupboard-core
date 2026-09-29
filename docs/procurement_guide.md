@@ -6,29 +6,36 @@ When you are ready to transition from software simulation to physical hardware t
 
 ---
 
-## 1. Bill of Materials (BOM) & Sourcing Checklist
+## 1. Procurement Status & Sourcing Checklist
 
-### Tier 1: Microcontroller & 850nm Transmitter (~$18 – $22 total)
-| Component | Recommended Part / Model | Purpose | Approx. Cost |
-| :--- | :--- | :--- | :--- |
-| **Microcontroller** | Raspberry Pi Pico (RP2040) with pre-soldered headers | Executes zero-jitter Manchester PIO modulation | $5.00 |
-| **IR Emitter** | Vishay TSAL6100 (850nm high-power IR LED, 5mm package) | Emits modulated optical beacon ($\lambda_p = 850\,\text{nm}$) | $4.50 (pack of 5) |
-| **Switching FET** | 2N7000 (TO-92 through-hole) or IRLML2502 | Logic-level N-channel MOSFET switching the LED rail | $2.50 (pack of 5) |
-| **Resistors** | <ul><li>$1\times 22\,\Omega$ (1W or 2W power rating, current limiting)</li><li>$1\times 100\,\Omega$ (1/8W, gate damping)</li><li>$1\times 10\text{ k}\Omega$ (1/8W, gate pulldown)</li></ul> | Sets ~150mA pulse current and protects Pico GPIO | $3.00 (assorted kit) |
-| **Prototyping** | 400-point solderless breadboard + male-to-male jumper wires | Circuit assembly without soldering | $5.00 |
+### ✅ Order 1: PiShop.us (ORDER PLACED)
+| Component | Item Ordered | Purpose | Status |
+| :--- | :--- | :--- | :---: |
+| **Microcontroller** | Raspberry Pi Pico H (Pre-Soldered Headers) | Zero-jitter Manchester PIO pulse generator | Ordered |
+| **Prototyping** | Half-size 400-Pin DIY Solderless Breadboard | Circuit mounting without soldering | Ordered |
+| **USB Link** | USB-A to Micro-USB-B cable (45cm) | Pico programming and telemetry link | Ordered |
+| **Camera Sensor** | Raspberry Pi Camera Module 3 NoIR | 850nm optical receiver with autofocus | Ordered |
+| **Pi 5 Cable** | Camera Cable for Raspberry Pi 5 (200mm, 22-to-15 pin) | Connects camera to Raspberry Pi 5 CAM0 | Ordered |
+| **Wiring** | Male-to-Female Jumper Cables × 40 (20cm) | Connects Raspberry Pi 5 GPIO to breadboard | Ordered |
 
-### Tier 2: Optical Sensor & Compute (~$35 – $110 total)
-| Component | Recommended Part / Model | Purpose | Approx. Cost |
-| :--- | :--- | :--- | :--- |
-| **Edge Compute** | Raspberry Pi 5 (4GB or 8GB) *(or developer laptop for bench testing)* | Runs the Panda edge runtime and Zenoh bridge | $60.00 *(or $0 if already owned)* |
-| **Monochrome Sensor** | Raspberry Pi Global Shutter Camera (Sony IMX296) or Arducam OV9281 | Eliminates rolling shutter skew during pulse decoding | $25.00 – $50.00 |
-| **Camera Lens** | M12 Mount Lens (6mm or 8mm focal length) | Focuses the optical image onto the sensor | $8.00 |
-| **Pi 5 CSI Cable** | 22-pin 0.5mm to 15-pin 1.0mm flex ribbon cable (150mm) | Connects camera to Raspberry Pi 5 CAM0 port | $3.50 |
+---
 
-### Tier 3: Optical Isolation Filter (~$15 – $25 total)
-| Component | Recommended Part / Model | Purpose | Approx. Cost |
+### 🛒 Order 2: Amazon Checklist (FINAL PARTS NEEDED)
+
+You only need **4 small electronics items** from Amazon to complete the testbed:
+
+| Component | Exact Amazon Search Query | Description / Notes | Approx. Cost |
 | :--- | :--- | :--- | :--- |
-| **Bandpass Filter** | 850nm Narrowband Optical Bandpass Filter (FWHM 10–20nm, 12mm or 25mm diameter) | Blocks ambient sunlight (400–750nm); renders dark background | $18.00 |
+| **1. Optical Filter** | `850nm narrow bandpass optical filter` | 12mm, 15mm, or 25mm circular glass disc (FWHM 15–20nm). Placed in front of Camera Module 3 to block room light. | ~$14.00 |
+| **2. 850nm IR LEDs** | `Vishay TSAL6100 850nm IR LED` *(or `850nm 5mm high power IR LED 10 pack`)* | 5mm through-hole infrared emitter with radiant intensity $>130\,\text{mW/sr}$. | ~$5.00 |
+| **3. Switching FET** | `2N7000 N-channel MOSFET TO-92` | 3-pin through-hole transistor switching the 5V LED rail. | ~$5.00 |
+| **4. Resistors** | `electronic resistor assortment kit 1/4w` | Contains standard $100\,\Omega$ (gate) and $10\text{ k}\Omega$ (pulldown) resistors. | ~$7.00 |
+
+> [!TIP]
+> **Breadboard EE Trick for the 1W Power Resistor:**  
+> Instead of buying a special bulky 1W resistor, your 1/4W resistor kit already has what you need! Putting **four $100\,\Omega$ 1/4W resistors in parallel** on the breadboard yields an equivalent $25\,\Omega$ resistance rated for **1W** ($4 \times 0.25\text{ W}$), perfectly setting the ~140mA emitter pulse current!
+>
+> *(Optional)* If your existing male-to-male jumper wires at home feel loose, search: `solderless breadboard jumper wire kit preformed` (~$6.00) for rigid U-shaped solid-core copper wires that never pop out.
 
 ---
 

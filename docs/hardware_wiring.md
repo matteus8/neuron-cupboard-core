@@ -61,7 +61,8 @@ $$R_{\text{limit}} = \frac{V_{CC} - V_F - V_{DS(\text{on})}}{I_{\text{peak}}} = 
 Because Manchester encoding enforces an exact 50% chip balance (transitions in every bit interval):
 $$P_{\text{peak}} = I_{\text{peak}}^2 \cdot R_{\text{limit}} = (0.15)^2 \cdot 22 = 0.495\text{ W}$$
 $$P_{\text{average}} = P_{\text{peak}} \times \text{DutyCycle} = 0.495 \times 0.5 = 0.248\text{ W}$$
-*Selection:* A $22\,\Omega$ resistor rated for **1W** provides a $4\times$ thermal safety margin.
+*Selection:* A $22\,\Omega$ resistor rated for **1W** provides a $4\times$ thermal safety margin.  
+*Breadboard Alternative:* Four $100\,\Omega$ standard 1/4W resistors wired in parallel equal $25\,\Omega$ rated for **1W** ($4 \times 0.25\text{ W}$), perfectly delivering ~140mA pulse current using common resistor assortment kits.
 
 ```
        +5V (VBUS / Pin 40)
