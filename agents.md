@@ -30,7 +30,7 @@ Code in one subsystem must never import dependencies from another. They interfac
 *   **Panda Runtime:** The deterministic edge execution engine evaluating incoming frames and state transitions.
 
 ## 6. Current Operational State & Physical Bench Hardware
-*   **Software Status:** Full stack implemented, verified (27 unit/fuzz tests passing in <0.3s), SAST audited, release `v0.1.0` tagged. Active branch: `feat/dual-camera-and-bench-tool`.
+*   **Software Status:** Full stack implemented, verified (27 unit/fuzz tests passing in <0.3s), SAST audited, release `v0.1.0` tagged. Active branch: `main`.
 *   **Target Hardware Testbed (Purchased & Awaiting Delivery):**
     *   **Edge Compute:** Raspberry Pi 5 (user on-hand).
     *   **Microcontroller:** Raspberry Pi Pico H with pre-soldered headers (ordered from PiShop.us).
