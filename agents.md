@@ -29,5 +29,22 @@ Code in one subsystem must never import dependencies from another. They interfac
 *   **The Cupboard:** The decentralized swarm consensus state shared among active nodes.
 *   **Panda Runtime:** The deterministic edge execution engine evaluating incoming frames and state transitions.
 
-## Task
-Acknowledge these constraints. Await instruction for the initial module implementation.
+## 6. Current Operational State & Physical Bench Hardware
+*   **Software Status:** Full stack implemented, verified (27 unit/fuzz tests passing in <0.3s), SAST audited, release `v0.1.0` tagged. Active branch: `feat/dual-camera-and-bench-tool`.
+*   **Target Hardware Testbed (Purchased & Awaiting Delivery):**
+    *   **Edge Compute:** Raspberry Pi 5 (user on-hand).
+    *   **Microcontroller:** Raspberry Pi Pico H with pre-soldered headers (ordered from PiShop.us).
+    *   **Optical Receiver:** Raspberry Pi Camera Module 3 NoIR + 200mm 22-to-15 pin CSI adapter cable (ordered from PiShop.us).
+    *   **Optical Filter:** 12.5mm × 1.0mm 850nm Narrow Bandpass Filter glass disc (ordered from Amazon). Sits directly over Camera Module 3 aperture.
+    *   **IR Emitter:** Chanzon 5mm 850nm IR LEDs (ordered from Amazon).
+    *   **Switching FET:** 2N7000 N-Channel TO-92 MOSFET (ordered from Amazon). Logic-level gate driven by 3.3V GPIO.
+    *   **Resistors:** LuminologyPro 1000-pc 1/4W resistor kit (ordered from Amazon). Uses 4× $100\,\Omega$ in parallel for a $25\,\Omega$ 1.0W current limiter, plus $100\,\Omega$ gate and $10\text{ k}\Omega$ pulldown.
+    *   **Prototyping:** 400-point solderless breadboard (PiShop.us), Male-to-Female jumpers (PiShop.us), Male-to-Male jumpers (user on-hand).
+*   **Next Steps When Hardware Arrives:**
+    1. Guide user through solderless breadboard assembly per [`docs/hardware_wiring.md`](file:///Users/mcamacho/git-repos/neuron-cupboard-core/docs/hardware_wiring.md).
+    2. Flash transmitter firmware onto Pico (`firmware/python/bamboo_transmitter.py` or `firmware/build/bamboo_node.uf2`).
+    3. Run hardware diagnostics with [`scripts/bench_tool.py`](file:///Users/mcamacho/git-repos/neuron-cupboard-core/scripts/bench_tool.py):
+       - Step 1: `python3 scripts/bench_tool.py --mode=scan` (verify Pico serial enumeration).
+       - Step 2: `python3 scripts/bench_tool.py --mode=camera-align --device=0` (focus lens with 850nm filter in place).
+       - Step 3: `python3 scripts/bench_tool.py --mode=rx-decode --device=0` (verify Manchester CRC-8 frame decode).
+    4. Launch production edge engine on Pi 5: `python3 -m runtime.panda.engine`.

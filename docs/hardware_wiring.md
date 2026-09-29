@@ -32,21 +32,21 @@ Each physical **Bamboo Node** payload consists of two primary tiers:
 
 ## 2. Bill of Materials (BOM) & Bench Hardware Kit
 
-### Bench Prototyping Kit (PiShop & Amazon Verified)
+### Bench Prototyping Kit (PiShop & Amazon Confirmed Orders)
 
-| Component | Part / Item Description | Source | Reference / Notes |
+| Component | Part / Item Description | Source | Status / Notes |
 | :--- | :--- | :--- | :--- |
-| **MCU** | Raspberry Pi Pico H (Pre-Soldered Male Headers) | PiShop.us | Dual Cortex-M0+ @ 133MHz, hardware PIO bit-banging |
-| **SBC** | Raspberry Pi 5 (4GB / 8GB) | Existing | Host edge compute, executes Panda runtime & Zenoh gateway |
-| **Camera** | Raspberry Pi Camera Module 3 NoIR (Standard 76° FOV) | PiShop.us | Sony IMX708, NoIR filter allows 850nm light detection |
-| **CSI Cable** | Pi 5 Camera Cable (200mm, 22-pin to 15-pin) | PiShop.us | Adapts Pi 5 high-density 22-pin MIPI port to camera 15-pin |
-| **Filter** | 12.5mm × 1.0mm 850nm Narrow Bandpass Filter Glass | Amazon | Blocks 400–750nm ambient light; verified (`docs/image copy 3.png`) |
-| **IR LED** | Chanzon 5mm 850nm IR Emitter LEDs (100-pack) | Amazon | $\lambda_p = 850\text{ nm}$, $V_F \approx 1.5\text{ V}$; verified (`docs/image copy 4.png`) |
-| **MOSFET** | 2N7000 TO-92 N-Channel MOSFET 200mA 60V (100-pack) | Amazon | Logic-level gate, breadboard friendly; verified (`docs/image copy 5.png`) |
-| **Resistors**| LuminologyPro 1000-pc 1/4W 25-Value Kit ($1\,\Omega$–$1\text{ M}\Omega$) | Amazon | Includes $100\,\Omega$ (limiter/gate) & $10\text{ k}\Omega$ (pulldown); verified (`docs/image copy 6.png`) |
-| **Breadboard**| 400-Point Solderless Prototyping Breadboard | PiShop.us | Solderless platform for Pico H, FET, resistors, and LED |
-| **Jumpers** | 40-pin Male-to-Female Jumpers (20cm) + Male-to-Male | PiShop / On-hand | Links Pico to Pi 5 GPIO header and ties breadboard rails |
-| **USB Cable**| Micro-USB Data Cable | PiShop.us | Pico firmware flashing, power, and serial monitoring |
+| **MCU** | Raspberry Pi Pico H (Pre-Soldered Male Headers) | PiShop.us | **Ordered.** Dual Cortex-M0+ @ 133MHz, hardware PIO bit-banging |
+| **SBC** | Raspberry Pi 5 (4GB / 8GB) | Existing | **On-hand.** Host edge compute, executes Panda runtime & Zenoh gateway |
+| **Camera** | Raspberry Pi Camera Module 3 NoIR (Standard 76° FOV) | PiShop.us | **Ordered.** Sony IMX708, NoIR filter allows 850nm light detection |
+| **CSI Cable** | Pi 5 Camera Cable (200mm, 22-pin to 15-pin) | PiShop.us | **Ordered.** Adapts Pi 5 high-density 22-pin MIPI port to camera 15-pin |
+| **Filter** | 12.5mm × 1.0mm 850nm Narrow Bandpass Filter Glass (2pcs) | Amazon | **Ordered.** Blocks 400–750nm ambient light; 12.5mm covers lens aperture |
+| **IR LED** | Chanzon 5mm 850nm IR Emitter LEDs (100-pack) | Amazon | **Ordered.** $\lambda_p = 850\text{ nm}$, $V_F \approx 1.5\text{ V}$, 5mm through-hole breadboard legs |
+| **MOSFET** | 2N7000 TO-92 N-Channel MOSFET 200mA 60V (100-pack) | Amazon | **Ordered.** Logic-level gate, 3-pin TO-92 package plugs into breadboard |
+| **Resistors**| LuminologyPro 1000-pc 1/4W 25-Value Kit ($1\,\Omega$–$1\text{ M}\Omega$) | Amazon | **Ordered.** Includes $100\,\Omega$ (limiter/gate) & $10\text{ k}\Omega$ (pulldown) |
+| **Breadboard**| 400-Point Solderless Prototyping Breadboard | PiShop.us | **Ordered.** Solderless platform for Pico H, FET, resistors, and LED |
+| **Jumpers** | 40-pin Male-to-Female Jumpers (20cm) + Male-to-Male | PiShop / On-hand | **Ordered / On-hand.** Links Pico to Pi 5 GPIO header and ties breadboard rails |
+| **USB Cable**| Micro-USB Data Cable | PiShop.us | **Ordered.** Pico firmware flashing, power, and serial monitoring |
 
 ### Electrical Component Reference
 

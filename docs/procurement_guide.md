@@ -20,22 +20,22 @@ When you are ready to transition from software simulation to physical hardware t
 
 ---
 
-### 🛒 Order 2: Amazon Checklist (FINAL PARTS NEEDED)
+### ✅ Order 2: Amazon (ORDER PLACED - $41.36)
 
-You only need **4 small electronics items** from Amazon to complete the testbed:
+All 4 remaining electronic components ordered from Amazon:
 
-| Component | Exact Amazon Search Query | Description / Notes | Approx. Cost |
-| :--- | :--- | :--- | :--- |
-| **1. Optical Filter** | `850nm narrow bandpass optical filter` | 12mm, 15mm, or 25mm circular glass disc (FWHM 15–20nm). Placed in front of Camera Module 3 to block room light. | ~$14.00 |
-| **2. 850nm IR LEDs** | `Vishay TSAL6100 850nm IR LED` *(or `850nm 5mm high power IR LED 10 pack`)* | 5mm through-hole infrared emitter with radiant intensity $>130\,\text{mW/sr}$. | ~$5.00 |
-| **3. Switching FET** | `2N7000 N-channel MOSFET TO-92` | 3-pin through-hole transistor switching the 5V LED rail. | ~$5.00 |
-| **4. Resistors** | `electronic resistor assortment kit 1/4w` | Contains standard $100\,\Omega$ (gate) and $10\text{ k}\Omega$ (pulldown) resistors. | ~$7.00 |
+| Component | Exact Item Purchased | Specs / Function | Qty / Price | Status |
+| :--- | :--- | :--- | :--- | :---: |
+| **1. Optical Filter** | 2pcs 12.5mm × 1.0mm 850nm Narrow Bandpass Filter Glass | 12.5mm disc fits Camera 3 NoIR aperture; blocks 400–750nm ambient light | 2 pcs / $17.99 | Ordered |
+| **2. 850nm IR LEDs** | CHANZON 100 pcs 5mm IR 850nm Emitter LED Diode Lights | $\lambda_p = 850\text{ nm}$, $V_F \approx 1.5\text{ V}$, 5mm through-hole breadboard leads | 100 pcs / $8.99 | Ordered |
+| **3. Switching FET** | ALLECIN 2N7000 N-Channel MOSFET TO-92 | Logic-level gate switches at 3.3V GPIO; handles 200mA cont. / 500mA pulse | 100 pcs / $7.99 | Ordered |
+| **4. Resistor Kit** | LuminologyPro 1000-Piece Resistor Kit (1/4W, 25-Value) | Includes 40× $100\,\Omega$ and 40× $10\text{ k}\Omega$ metal film resistors | 1000 pcs / $6.39 | Ordered |
 
 > [!TIP]
 > **Breadboard EE Trick for the 1W Power Resistor:**  
-> Instead of buying a special bulky 1W resistor, your 1/4W resistor kit already has what you need! Putting **four $100\,\Omega$ 1/4W resistors in parallel** on the breadboard yields an equivalent $25\,\Omega$ resistance rated for **1W** ($4 \times 0.25\text{ W}$), perfectly setting the ~140mA emitter pulse current!
+> Putting **four $100\,\Omega$ 1/4W resistors in parallel** on the breadboard yields an equivalent $25\,\Omega$ resistance rated for **1.0W** ($4 \times 0.25\text{ W}$), safely delivering ~140mA emitter pulse current without thermal issues!
 >
-> *(Optional)* If your existing male-to-male jumper wires at home feel loose, search: `solderless breadboard jumper wire kit preformed` (~$6.00) for rigid U-shaped solid-core copper wires that never pop out.
+> **Wiring Note:** The user has male-to-male jumper wires at home from a prior project to bridge breadboard tie points. 40× Male-to-Female jumper wires are included in the PiShop order to bridge the Pi 5 GPIO to the breadboard/Pico.
 
 ---
 
