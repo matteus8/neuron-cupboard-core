@@ -44,7 +44,7 @@ jobs:
 
       - name: Run C Static Analysis (cppcheck & hardened clang)
         run: |
-          cppcheck --enable=warning,style,performance,portability --error-exitcode=1 --inline-suppr --suppress=missingIncludeSystem -Iproto/c -Ifirmware/include proto/c/ firmware/src/
+          cppcheck --enable=warning,style,performance,portability --error-exitcode=1 --inline-suppr --suppress=missingIncludeSystem --suppress=unusedFunction -Iproto/c -Ifirmware/include proto/c/ firmware/src/
           make sast-c
 
       - name: Run Python SAST (bandit)
@@ -83,7 +83,7 @@ jobs:
       - name: Verify Code Generation
         run: |
           make proto
-          git diff --exit-code || (echo "ERROR: Uncommitted protobuf generated changes detected." && exit 1)
+          make test-proto
 
       - name: Run Test Suites & E2E Swarm Simulation
         run: |

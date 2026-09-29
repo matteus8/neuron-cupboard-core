@@ -150,7 +150,7 @@ static inline void neuron_frame_init(
     frame->state_byte = state_byte;
 
     /* Calculate CRC over payload: node_id, seq_num, state_byte */
-    uint8_t payload[3] = { node_id, seq_num, state_byte };
+    const uint8_t payload[3] = { node_id, seq_num, state_byte };
     frame->crc8 = neuron_crc8(payload, 3);
 }
 
@@ -162,7 +162,7 @@ static inline bool neuron_frame_validate(const neuron_wire_frame_t *frame) {
     if (frame->preamble != NEURON_WIRE_PREAMBLE) return false;
     if (frame->sync_word != NEURON_WIRE_SYNC_WORD) return false;
     
-    uint8_t payload[3] = { frame->node_id, frame->seq_num, frame->state_byte };
+    const uint8_t payload[3] = { frame->node_id, frame->seq_num, frame->state_byte };
     uint8_t expected_crc = neuron_crc8(payload, 3);
     return frame->crc8 == expected_crc;
 }
