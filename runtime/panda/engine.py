@@ -11,6 +11,7 @@ from typing import Optional, List, Callable, Tuple
 
 from .vision import OpticalTracker, CameraIntrinsics, OpticalCentroid
 from .decoder import ManchesterDecoder
+from .multi_tracker import SpatialPulseTracker
 from .cupboard import TheCupboard
 import proto.neuron_wire as nw
 
@@ -32,7 +33,7 @@ class PandaRuntime:
 
         self.intrinsics = intrinsics
         self.tracker = OpticalTracker(intrinsics, luminance_threshold=luminance_threshold)
-        self.decoder = ManchesterDecoder(polarity=0) # IEEE 802.3
+        self.multi_tracker = SpatialPulseTracker(max_association_distance_px=35.0, max_coast_frames=120, polarity=0)
         self.cupboard = TheCupboard(node_timeout_us=node_timeout_us)
         self.on_packet_callback = on_packet_callback
         self.gateway_udp_addr = gateway_udp_addr
@@ -44,8 +45,6 @@ class PandaRuntime:
             import socket
             self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.udp_sock.setblocking(False)
-
-        self.last_centroid: Optional[OpticalCentroid] = None
 
     def process_optical_frame(
         self,
@@ -63,22 +62,21 @@ class PandaRuntime:
         # 1. Zero-bloat blob tracking
         centroids = self.tracker.process_frame(frame_data, width, height)
 
-        # 2. Decode pulse trains
+        # 2. Multi-target spatial decoding (SDMA)
+        extracted_tuples = self.multi_tracker.update(centroids, timestamp_us)
         extracted_frames: List[nw.WireFrame] = []
-        if centroids:
-            # Modulated signal detected: high luminance = chip 1
-            primary_blob = centroids[0]
-            self.last_centroid = primary_blob
-            chip_val = 1 if primary_blob.intensity > self.tracker.threshold else 0
-            self.decoder.feed_chip(chip_val)
-        else:
-            # Background / low intensity = chip 0
-            self.decoder.feed_chip(0)
 
-        wire_frame = self.decoder._try_extract_frame()
-        if wire_frame:
+        for wire_frame, track in extracted_tuples:
             extracted_frames.append(wire_frame)
-            self._dispatch_wire_frame(wire_frame, self.last_centroid, timestamp_us)
+            track_centroid = OpticalCentroid(
+                x=track.x,
+                y=track.y,
+                intensity=track.intensity,
+                area=1.0,
+                azimuth_mrad=track.azimuth_mrad,
+                elevation_mrad=track.elevation_mrad,
+            )
+            self._dispatch_wire_frame(wire_frame, track_centroid, timestamp_us)
 
         # 3. Deterministic stale node eviction
         self.cupboard.evict_stale_nodes(timestamp_us)

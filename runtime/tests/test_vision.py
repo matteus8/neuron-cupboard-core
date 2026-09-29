@@ -53,6 +53,22 @@ class TestOpticalTracker(unittest.TestCase):
         centroids = self.tracker.process_frame(img, width=100, height=100)
         self.assertEqual(len(centroids), 0)
 
+    def test_multiple_simultaneous_blobs(self):
+        # Spot 1 at (25, 25), Spot 2 at (75, 75)
+        img = bytearray(100 * 100)
+        for y in range(24, 27):
+            for x in range(24, 27):
+                img[y * 100 + x] = 255
+        for y in range(74, 77):
+            for x in range(74, 77):
+                img[y * 100 + x] = 255
+
+        centroids = self.tracker.process_frame(bytes(img), width=100, height=100)
+        self.assertEqual(len(centroids), 2)
+        xs = sorted([c.x for c in centroids])
+        self.assertAlmostEqual(xs[0], 25.0, places=1)
+        self.assertAlmostEqual(xs[1], 75.0, places=1)
+
 
 if __name__ == "__main__":
     unittest.main()

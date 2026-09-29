@@ -39,8 +39,8 @@ def run_swarm_simulation():
 
     print(f"level=INFO ts={int(time.time()*1e6)} node=1 event=observer_node_online mode=SEARCH")
 
-    # 2. Prepare transmission sequence for Remote Bamboo Node 2
-    # Node 2 initially transmits in SEARCH mode with consensus ACK
+    # 2. Prepare transmission sequences for Remote Bamboo Nodes 2 & 3
+    # Node 2: Formation lock, consensus ACK
     node2_state = nw.pack_state(
         mode=nw.MODE_SEARCH,
         lock_status=nw.LOCK_TRACKING,
@@ -48,26 +48,44 @@ def run_swarm_simulation():
     )
     node2_frame_bytes = nw.pack_frame(node_id=2, seq_num=1, state_byte=node2_state)
 
-    # Convert Node 2 frame into IEEE 802.3 Manchester chips
-    node2_chips = []
-    for b in node2_frame_bytes:
-        for bit_pos in range(7, -1, -1):
-            bit = (b >> bit_pos) & 1
-            if bit == 0:
-                node2_chips.extend([1, 0])
-            else:
-                node2_chips.extend([0, 1])
+    # Node 3: Formation lock, consensus ACK
+    node3_state = nw.pack_state(
+        mode=nw.MODE_SEARCH,
+        lock_status=nw.LOCK_TRACKING,
+        consensus_ack=True,
+    )
+    node3_frame_bytes = nw.pack_frame(node_id=3, seq_num=2, state_byte=node3_state)
 
-    print(f"level=INFO event=node2_frame_prepared chips={len(node2_chips)} bytes=6")
+    def to_chips(frame_bytes):
+        chips = []
+        for b in frame_bytes:
+            for bit_pos in range(7, -1, -1):
+                bit = (b >> bit_pos) & 1
+                if bit == 0:
+                    chips.extend([1, 0])
+                else:
+                    chips.extend([0, 1])
+        return chips
 
-    # 3. Simulate optical frames: Node 2 emitter pulsing at pixel (200, 120)
-    emitter_x, emitter_y = 200, 120
+    node2_chips = to_chips(node2_frame_bytes)
+    node3_chips = to_chips(node3_frame_bytes)
+
+    print(f"level=INFO event=multi_node_frames_prepared nodes=[2,3] chips_per_node=96")
+
+    # 3. Simulate optical frames:
+    # Node 2 pulses at pixel (100, 120) [bearing left]
+    # Node 3 pulses at pixel (220, 120) [bearing right]
     frames_relayed_to_gw = 0
 
-    print("level=INFO event=starting_optical_pulse_train_modulation...")
-    for chip_idx, chip in enumerate(node2_chips):
-        is_lit = (chip == 1)
-        active_emitters = [(emitter_x, emitter_y, 4.0, 245.0, is_lit)]
+    print("level=INFO event=starting_concurrent_spatial_pulse_modulation...")
+    for chip_idx in range(96):
+        c2_lit = (node2_chips[chip_idx] == 1)
+        c3_lit = (node3_chips[chip_idx] == 1)
+
+        active_emitters = [
+            (100.0, 120.0, 4.0, 245.0, c2_lit),
+            (220.0, 120.0, 4.0, 245.0, c3_lit),
+        ]
 
         frame = cam.grab_frame(active_emitters=active_emitters)
         if frame:
@@ -76,8 +94,8 @@ def run_swarm_simulation():
                 width=frame.width,
                 height=frame.height,
             )
-            if extracted:
-                print(f"level=INFO chip={chip_idx} event=frame_recovered node={extracted[0].node_id}")
+            for f in extracted:
+                print(f"level=INFO chip={chip_idx} event=frame_recovered node={f.node_id} seq={f.seq_num}")
 
         # Check if gateway received packet over UDP
         try:
@@ -115,13 +133,15 @@ def run_swarm_simulation():
     print(f"  Consensus ACK    : {decision.consensus_ack}")
     print(f"  The Cupboard Size: {runtime.cupboard.active_node_count} active node(s)")
     print(f"  Gateway Relayed  : {frames_relayed_to_gw} frame(s)")
+    for nid, node_st in runtime.cupboard.nodes.items():
+        print(f"    - Swarm Node {nid}: mode={node_st.state.mode} az_mrad={node_st.azimuth_mrad} ack={node_st.state.consensus_ack}")
     print("--------------------------------------------------------------------------------")
 
     # Assertions for verification
-    assert runtime.cupboard.active_node_count == 1, "Node 2 must be tracked in The Cupboard"
+    assert runtime.cupboard.active_node_count == 2, "Both Node 2 and Node 3 must be tracked in The Cupboard"
     assert decision.mode == nw.MODE_FORMATION_LOCK, "Swarm must reach FORMATION_LOCK"
     assert decision.lock_status == nw.LOCK_HARD_LOCKED, "Bearing must reach HARD_LOCKED"
-    assert frames_relayed_to_gw >= 1, "At least 1 frame must reach the Gateway UDP bridge"
+    assert frames_relayed_to_gw >= 2, "At least 2 frames must reach the Gateway UDP bridge"
 
     cam.close()
     gw_sock.close()

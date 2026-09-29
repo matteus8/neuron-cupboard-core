@@ -104,16 +104,11 @@ class OpticalTracker:
         return centroids
 
     def _process_fallback(self, frame_bytes: bytes, width: int, height: int) -> List[OpticalCentroid]:
-        """Pure-Python fallback for bench simulation and host testing."""
+        """Pure-Python spatial clustering for multi-target optical blobs."""
         if not isinstance(frame_bytes, (bytes, bytearray)):
             return []
 
-        # Simple connected component / pixel cluster centroid
-        total_intensity = 0.0
-        sum_x = 0.0
-        sum_y = 0.0
-        count = 0
-
+        bright_pixels = []
         idx = 0
         for y in range(height):
             for x in range(width):
@@ -121,28 +116,60 @@ class OpticalTracker:
                     break
                 val = frame_bytes[idx]
                 if val >= self.threshold:
-                    sum_x += x * val
-                    sum_y += y * val
-                    total_intensity += val
-                    count += 1
+                    bright_pixels.append((x, y, val))
                 idx += 1
 
-        if count < self.min_area or total_intensity == 0:
+        if not bright_pixels:
             return []
 
-        cx = sum_x / total_intensity
-        cy = sum_y / total_intensity
-        avg_intensity = total_intensity / count
+        # Cluster bright pixels by spatial proximity
+        clusters: List[List[Tuple[int, int, int]]] = []
+        for p in bright_pixels:
+            px, py, _ = p
+            assigned = False
+            for c in clusters:
+                cx0, cy0, _ = c[0]
+                if abs(px - cx0) <= 6 and abs(py - cy0) <= 6:
+                    c.append(p)
+                    assigned = True
+                    break
+            if not assigned:
+                clusters.append([p])
 
-        azimuth_mrad, elevation_mrad = self._pixel_to_bearing(cx, cy)
-        return [OpticalCentroid(
-            x=cx,
-            y=cy,
-            intensity=avg_intensity,
-            area=float(count),
-            azimuth_mrad=azimuth_mrad,
-            elevation_mrad=elevation_mrad,
-        )]
+        centroids: List[OpticalCentroid] = []
+        for cluster in clusters:
+            if len(cluster) < self.min_area or len(cluster) > self.max_area:
+                continue
+
+            sum_x = 0.0
+            sum_y = 0.0
+            total_intensity = 0.0
+            max_intensity = 0
+
+            for px, py, pval in cluster:
+                sum_x += px * pval
+                sum_y += py * pval
+                total_intensity += pval
+                if pval > max_intensity:
+                    max_intensity = pval
+
+            if total_intensity == 0:
+                continue
+
+            cx = sum_x / total_intensity
+            cy = sum_y / total_intensity
+
+            azimuth_mrad, elevation_mrad = self._pixel_to_bearing(cx, cy)
+            centroids.append(OpticalCentroid(
+                x=cx,
+                y=cy,
+                intensity=float(max_intensity),
+                area=float(len(cluster)),
+                azimuth_mrad=azimuth_mrad,
+                elevation_mrad=elevation_mrad,
+            ))
+
+        return centroids
 
     def _pixel_to_bearing(self, cx: float, cy: float) -> Tuple[int, int]:
         """Convert pixel coordinate to optical axis bearing in milliradians."""
