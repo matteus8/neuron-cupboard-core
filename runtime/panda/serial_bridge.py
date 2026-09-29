@@ -92,6 +92,6 @@ class SerialBridge:
         if self.ser:
             try:
                 self.ser.close()
-            except Exception:
-                pass
+            except OSError as err:
+                sys.stderr.write(f"level=WARN event=serial_close_failed err={err}\n")
             self.ser = None

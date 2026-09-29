@@ -133,9 +133,13 @@ func (g *GatewayRelay) IngestAndRelayTacticalCommand(ctx context.Context, cmdByt
 		mode = neuronv1.OperationalMode_MODE_SEARCH
 	}
 
+	if cmd.TargetNodeId > 255 || cmd.CommandSeq > 255 {
+		return nil, fmt.Errorf("node ID or command sequence exceeds 8-bit wire bounds: target=%d seq=%d", cmd.TargetNodeId, cmd.CommandSeq)
+	}
+
 	stateByte := neuronproto.PackState(mode, lock, false, false, false, false)
 	var wireFrame [neuronproto.WireFrameLen]byte
-	neuronproto.PackFrame(&wireFrame, byte(cmd.TargetNodeId), byte(cmd.CommandSeq), stateByte)
+	neuronproto.PackFrame(&wireFrame, uint8(cmd.TargetNodeId), uint8(cmd.CommandSeq), stateByte)
 
 	atomic.AddInt64(&g.commandsRelayed, 1)
 	fmt.Fprintf(os.Stdout, "level=INFO ts=%d event=tactical_command_relayed target=%d cmd=%v wire_crc=0x%02X\n",
@@ -184,13 +188,14 @@ func (g *GatewayRelay) StartMetricsServer(ctx context.Context) {
 	})
 
 	server := &http.Server{
-		Addr:    g.config.MetricsAddr,
-		Handler: mux,
+		Addr:              g.config.MetricsAddr,
+		Handler:           mux,
+		ReadHeaderTimeout: 3 * time.Second,
 	}
 
 	go func() {
 		<-ctx.Done()
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Second)
+		shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), time.Second)
 		defer cancel()
 		_ = server.Shutdown(shutdownCtx)
 	}()

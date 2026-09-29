@@ -1,7 +1,10 @@
-.PHONY: all proto test build clean test-proto test-firmware test-runtime test-gateway
+export PATH := $(shell go env GOPATH)/bin:$(PATH)
 
 CC ?= cc
 CFLAGS ?= -Wall -Wextra -Werror -std=c99 -O2
+SEC_CFLAGS ?= -Wall -Wextra -Werror -Wformat -Wformat-security -Wconversion -std=c99 -O2
+
+.PHONY: all proto test build clean test-proto test-firmware test-runtime test-gateway test-sim bench sast sast-go sast-python sast-c release-build
 
 all: proto test build
 
@@ -46,11 +49,41 @@ bench:
 test: test-proto test-firmware test-runtime test-gateway test-sim
 	@echo "==> All subsystem and end-to-end simulation tests passed successfully."
 
+sast: sast-go sast-python sast-c
+	@echo "==> All SAST security audits passed cleanly."
+
+sast-go:
+	@echo "==> Running Go SAST (go vet, govulncheck, gosec)..."
+	@cd gateway && go vet ./...
+	@if command -v govulncheck >/dev/null 2>&1; then cd gateway && govulncheck ./...; else echo "WARN: govulncheck not installed"; fi
+	@if command -v gosec >/dev/null 2>&1; then cd gateway && gosec -quiet ./...; else echo "WARN: gosec not installed"; fi
+
+sast-python:
+	@echo "==> Running Python SAST (bandit)..."
+	@python3 -m bandit -q -r runtime/panda proto/
+	@echo "  [OK] Python static security audit clean."
+
+sast-c:
+	@echo "==> Running C Static Analysis and Hardened Compilation..."
+	@$(CC) $(SEC_CFLAGS) -Iproto/c proto/c/neuron_wire_test.c -o /tmp/c_sast_wire && /tmp/c_sast_wire && rm -f /tmp/c_sast_wire
+	@$(CC) $(SEC_CFLAGS) -Ifirmware/include -Iproto/c firmware/src/manchester.c firmware/test/test_manchester.c -o /tmp/c_sast_manchester && /tmp/c_sast_manchester && rm -f /tmp/c_sast_manchester
+	@echo "  [OK] C static security audit clean."
+
 build:
 	@echo "==> Building Gateway..."
 	@mkdir -p bin
 	@cd gateway && go build -o ../bin/gateway .
 	@echo "  [OK] bin/gateway created"
+
+release-build:
+	@echo "==> Cross-compiling lightweight standalone native binaries..."
+	@mkdir -p bin
+	@cd gateway && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o ../bin/gateway-linux-arm64 .
+	@cd gateway && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o ../bin/gateway-linux-amd64 .
+	@cd gateway && CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o ../bin/gateway-darwin-arm64 .
+	@cd bin && shasum -a 256 gateway-* > checksums.sha256
+	@echo "  [OK] Release artifacts generated in bin/:"
+	@ls -lh bin/
 
 clean:
 	@rm -rf bin/ /tmp/neuron_wire_test /tmp/neuron_crc8_robust_test /tmp/test_manchester /tmp/test_bamboo_pio /tmp/neuron_gateway

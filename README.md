@@ -18,9 +18,8 @@ Physical-layer optical transceiver payloads (**Bamboo Nodes**) and deterministic
 ## Quick Start
 
 ```bash
-# Build and run all subsystem unit tests
-make test
-
-# Run multi-node optical swarm simulation
-make test-sim
+make test      # Verify subsystems & E2E simulation
+make sast      # Multi-language SAST audits (gosec, bandit, clang)
+make bench     # Zero-allocation throughput benchmarks
 ```
+Releases are built via CI on semver tags (`v*.*.*`), producing stripped standalone binaries.

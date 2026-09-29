@@ -105,8 +105,8 @@ class PandaRuntime:
             try:
                 raw_wire = nw.pack_frame(wire_frame.node_id, wire_frame.seq_num, wire_frame.state_byte)
                 self.udp_sock.sendto(raw_wire, self.gateway_udp_addr)
-            except Exception:
-                pass
+            except OSError as err:
+                sys.stderr.write(f"level=WARN event=udp_forward_failed err={err}\n")
 
 
 if __name__ == "__main__":

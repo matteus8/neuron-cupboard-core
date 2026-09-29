@@ -1,16 +1,63 @@
-name: CI Quality Gate
+name: CI Quality Gate & Release Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, 'release/**', 'feat/**' ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
 jobs:
+  sast:
+    name: Static Application Security Testing (SAST)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Security Scanners
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq cppcheck clang
+          python3 -m pip install -q bandit
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      - name: Run C Static Analysis (cppcheck & hardened clang)
+        run: |
+          cppcheck --enable=warning,style,performance,portability --error-exitcode=1 --inline-suppr --suppress=missingIncludeSystem -Iproto/c -Ifirmware/include proto/c/ firmware/src/
+          make sast-c
+
+      - name: Run Python SAST (bandit)
+        run: |
+          make sast-python
+
+      - name: Run Go SAST (govulncheck & gosec)
+        run: |
+          make sast-go
+
   build-and-verify:
     name: Subsystem Verification & Simulation
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Codebase
         uses: actions/checkout@v4
@@ -46,7 +93,37 @@ jobs:
         run: |
           make bench
 
-      - name: Build Gateway Production Binary
+      - name: Verify Build
         run: |
           make build
           ls -lh bin/gateway
+
+  release:
+    name: Tag & Release Standalone Native Binaries
+    needs: [sast, build-and-verify]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Build Cross-Platform Standalone Binaries
+        run: |
+          make release-build
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            bin/gateway-linux-arm64
+            bin/gateway-linux-amd64
+            bin/gateway-darwin-arm64
+            bin/checksums.sha256
+          generate_release_notes: true
+          draft: false
+          prerelease: false
