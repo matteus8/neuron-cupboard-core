@@ -1,0 +1,36 @@
+[Unit]
+Description=Neuron Cupboard Panda Runtime (Deterministic Edge Vision & Swarm Consensus)
+Documentation=https://github.com/matteus8/neuron-cupboard-core
+After=network.target local-fs.target
+Wants=neuron-gateway.service
+
+[Service]
+Type=simple
+User=neuron
+Group=neuron
+WorkingDirectory=/opt/neuron-cupboard/runtime
+ExecStart=/usr/bin/python3 -m panda.engine
+Restart=always
+RestartSec=2s
+
+# Environment configuration
+Environment=PYTHONPATH=/opt/neuron-cupboard
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=-/etc/default/panda-runtime
+
+# Real-time scheduling for bounded optical frame integration
+CPUSchedulingPolicy=rr
+CPUSchedulingPriority=45
+
+# Hardening & Sandboxing
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+NoNewPrivileges=true
+
+# Structured logging to journald stdout
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

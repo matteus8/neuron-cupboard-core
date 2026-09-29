@@ -74,6 +74,21 @@ class TestSpatialPulseTracker(unittest.TestCase):
         self.assertEqual(f3.state.mode, nw.MODE_SEARCH)
         self.assertFalse(f3.state.consensus_ack)
 
+    def test_track_capacity_limiting_dos_protection(self):
+        """Verify tracker enforces hard limit on active tracks to prevent memory exhaustion."""
+        bounded_tracker = SpatialPulseTracker(max_active_tracks=5, max_coast_frames=10)
+
+        # Flood tracker with 20 distinct centroids in a single frame
+        flood_centroids = [
+            OpticalCentroid(x=float(i * 30), y=50.0, intensity=240.0, area=5.0, azimuth_mrad=0, elevation_mrad=0)
+            for i in range(20)
+        ]
+
+        bounded_tracker.update(flood_centroids)
+        # Must be strictly capped at 5 tracks
+        self.assertLessEqual(len(bounded_tracker.tracks), 5)
+
 
 if __name__ == "__main__":
     unittest.main()
+

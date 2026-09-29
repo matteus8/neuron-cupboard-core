@@ -1,0 +1,32 @@
+[Unit]
+Description=Neuron Cupboard Tactical Zenoh Gateway Bridge
+Documentation=https://github.com/matteus8/neuron-cupboard-core
+After=network.target
+
+[Service]
+Type=simple
+User=neuron
+Group=neuron
+WorkingDirectory=/opt/neuron-cupboard
+ExecStart=/opt/neuron-cupboard/bin/gateway
+Restart=always
+RestartSec=2s
+
+# 12-Factor Environment configuration
+Environment=NEURON_ZENOH_ROUTER=tcp/127.0.0.1:7447
+Environment=NEURON_LISTEN_ADDR=127.0.0.1:9090
+Environment=NEURON_METRICS_ADDR=127.0.0.1:9093
+EnvironmentFile=-/etc/default/neuron-gateway
+
+# Security & Sandboxing
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+NoNewPrivileges=true
+
+# Observability
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

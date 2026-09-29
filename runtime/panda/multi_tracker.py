@@ -52,10 +52,12 @@ class SpatialPulseTracker:
         self,
         max_association_distance_px: float = 30.0,
         max_coast_frames: int = 150,
+        max_active_tracks: int = 64,
         polarity: int = 0,
     ):
         self.max_distance = max_association_distance_px
         self.max_coast_frames = max_coast_frames
+        self.max_active_tracks = max_active_tracks
         self.polarity = polarity
         self.tracks: Dict[int, OpticalTrack] = {}
         self.next_track_id = 1
@@ -101,8 +103,18 @@ class SpatialPulseTracker:
                 track.frames_since_match += 1
                 track.decoder.feed_chip(0)
 
-        # 2. Spawn new tracks for remaining unmatched centroids
+        # 2. Spawn new tracks for remaining unmatched centroids (bounded by max_active_tracks)
         for c in unmatched_centroids:
+            if len(self.tracks) >= self.max_active_tracks:
+                # Prune oldest unbound track to avoid unbounded memory growth under optical glint storm
+                unbound = [t for t in self.tracks.values() if t.bound_node_id is None]
+                if unbound:
+                    oldest = max(unbound, key=lambda t: t.frames_since_match)
+                    del self.tracks[oldest.track_id]
+                else:
+                    # System at verified capacity, ignore surplus glint
+                    break
+
             new_track = OpticalTrack(
                 track_id=self.next_track_id,
                 x=c.x,

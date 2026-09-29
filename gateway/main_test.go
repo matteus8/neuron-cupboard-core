@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"io"
 	"net"
+	"net/http"
 	"testing"
 	"time"
 
@@ -168,5 +170,47 @@ func TestIngestAndRelayTacticalCommand(t *testing.T) {
 		t.Errorf("expected CRC 0x%02X, got 0x%02X", expectedCrc, frame[5])
 	}
 }
+
+func TestGatewayMetricsServer(t *testing.T) {
+	capture := &TestZenohCapture{}
+	cfg := RelayConfig{
+		MetricsAddr: "127.0.0.1:19099",
+	}
+	relay := NewGatewayRelay(cfg, capture)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go relay.StartMetricsServer(ctx)
+	time.Sleep(30 * time.Millisecond)
+
+	// Test /healthz
+	resp, err := http.Get("http://127.0.0.1:19099/healthz")
+	if err != nil {
+		t.Fatalf("failed to query /healthz: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected 200 OK from /healthz, got %d", resp.StatusCode)
+	}
+
+	body, _ := io.ReadAll(resp.Body)
+	if len(body) == 0 {
+		t.Errorf("empty response body from /healthz")
+	}
+
+	// Test /metrics
+	respMetrics, err := http.Get("http://127.0.0.1:19099/metrics")
+	if err != nil {
+		t.Fatalf("failed to query /metrics: %v", err)
+	}
+	defer respMetrics.Body.Close()
+
+	if respMetrics.StatusCode != http.StatusOK {
+		t.Errorf("expected 200 OK from /metrics, got %d", respMetrics.StatusCode)
+	}
+}
+
 
 

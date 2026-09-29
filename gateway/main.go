@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -19,6 +22,7 @@ import (
 type RelayConfig struct {
 	ZenohRouterEndpoint string
 	ListenAddr          string
+	MetricsAddr         string
 	PublishTimeout      time.Duration
 }
 
@@ -49,14 +53,19 @@ func (m *StdoutZenohMock) Close() error {
 
 // GatewayRelay translates raw optical mesh frames into serialized Protobuf packets and dispatches to Zenoh.
 type GatewayRelay struct {
-	config    RelayConfig
-	publisher ZenohPublisher
+	config          RelayConfig
+	publisher       ZenohPublisher
+	framesIngested  int64
+	framesInvalid   int64
+	commandsRelayed int64
+	startTime       time.Time
 }
 
 func NewGatewayRelay(cfg RelayConfig, pub ZenohPublisher) *GatewayRelay {
 	return &GatewayRelay{
 		config:    cfg,
 		publisher: pub,
+		startTime: time.Now(),
 	}
 }
 
@@ -65,6 +74,7 @@ func (g *GatewayRelay) IngestAndRelayWireFrame(ctx context.Context, frameBytes [
 	nowUs := uint64(time.Now().UnixMicro())
 	neuronMsg, err := neuronproto.UnpackFrame(frameBytes, nowUs)
 	if err != nil {
+		atomic.AddInt64(&g.framesInvalid, 1)
 		fmt.Fprintf(os.Stderr, "level=WARN ts=%d event=frame_decode_failed err=%q\n", nowUs, err)
 		return err
 	}
@@ -72,6 +82,7 @@ func (g *GatewayRelay) IngestAndRelayWireFrame(ctx context.Context, frameBytes [
 	// Serialize Protobuf payload
 	protoBytes, err := proto.Marshal(neuronMsg)
 	if err != nil {
+		atomic.AddInt64(&g.framesInvalid, 1)
 		fmt.Fprintf(os.Stderr, "level=ERROR ts=%d event=proto_marshal_failed err=%q\n", nowUs, err)
 		return err
 	}
@@ -87,6 +98,7 @@ func (g *GatewayRelay) IngestAndRelayWireFrame(ctx context.Context, frameBytes [
 		return err
 	}
 
+	atomic.AddInt64(&g.framesIngested, 1)
 	return nil
 }
 
@@ -125,10 +137,67 @@ func (g *GatewayRelay) IngestAndRelayTacticalCommand(ctx context.Context, cmdByt
 	var wireFrame [neuronproto.WireFrameLen]byte
 	neuronproto.PackFrame(&wireFrame, byte(cmd.TargetNodeId), byte(cmd.CommandSeq), stateByte)
 
+	atomic.AddInt64(&g.commandsRelayed, 1)
 	fmt.Fprintf(os.Stdout, "level=INFO ts=%d event=tactical_command_relayed target=%d cmd=%v wire_crc=0x%02X\n",
 		nowUs, cmd.TargetNodeId, cmd.CommandType, wireFrame[5])
 
 	return &wireFrame, nil
+}
+
+// StartMetricsServer serves HTTP healthz and Prometheus telemetry endpoints.
+func (g *GatewayRelay) StartMetricsServer(ctx context.Context) {
+	if g.config.MetricsAddr == "" {
+		return
+	}
+
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		status := map[string]interface{}{
+			"status":           "UP",
+			"uptime_seconds":   int64(time.Since(g.startTime).Seconds()),
+			"frames_ingested":  atomic.LoadInt64(&g.framesIngested),
+			"frames_invalid":   atomic.LoadInt64(&g.framesInvalid),
+			"commands_relayed": atomic.LoadInt64(&g.commandsRelayed),
+		}
+		_ = json.NewEncoder(w).Encode(status)
+	})
+
+	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; version=0.0.4")
+		fmt.Fprintf(w, "# HELP neuron_gateway_frames_ingested_total Total optical frames ingested\n")
+		fmt.Fprintf(w, "# TYPE neuron_gateway_frames_ingested_total counter\n")
+		fmt.Fprintf(w, "neuron_gateway_frames_ingested_total %d\n", atomic.LoadInt64(&g.framesIngested))
+
+		fmt.Fprintf(w, "# HELP neuron_gateway_frames_invalid_total Total invalid optical frames dropped\n")
+		fmt.Fprintf(w, "# TYPE neuron_gateway_frames_invalid_total counter\n")
+		fmt.Fprintf(w, "neuron_gateway_frames_invalid_total %d\n", atomic.LoadInt64(&g.framesInvalid))
+
+		fmt.Fprintf(w, "# HELP neuron_gateway_commands_relayed_total Total tactical commands relayed\n")
+		fmt.Fprintf(w, "# TYPE neuron_gateway_commands_relayed_total counter\n")
+		fmt.Fprintf(w, "neuron_gateway_commands_relayed_total %d\n", atomic.LoadInt64(&g.commandsRelayed))
+
+		fmt.Fprintf(w, "# HELP neuron_gateway_uptime_seconds Total process uptime in seconds\n")
+		fmt.Fprintf(w, "# TYPE neuron_gateway_uptime_seconds gauge\n")
+		fmt.Fprintf(w, "neuron_gateway_uptime_seconds %d\n", int64(time.Since(g.startTime).Seconds()))
+	})
+
+	server := &http.Server{
+		Addr:    g.config.MetricsAddr,
+		Handler: mux,
+	}
+
+	go func() {
+		<-ctx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		_ = server.Shutdown(shutdownCtx)
+	}()
+
+	fmt.Fprintf(os.Stdout, "level=INFO ts=%d event=metrics_server_started addr=%s\n",
+		time.Now().UnixMicro(), g.config.MetricsAddr)
+	_ = server.ListenAndServe()
 }
 
 // ListenUDP runs a bounded-latency UDP server ingesting 6-byte optical frames.
@@ -174,20 +243,29 @@ func (g *GatewayRelay) ListenUDP(ctx context.Context) error {
 	}
 }
 
+func getEnv(key, defaultVal string) string {
+	if val := os.Getenv(key); val != "" {
+		return val
+	}
+	return defaultVal
+}
+
 func main() {
-	routerEndpoint := flag.String("zenoh-router", "tcp/127.0.0.1:7447", "Zenoh router peer endpoint")
-	listenAddr := flag.String("listen-addr", "127.0.0.1:9090", "Local optical mesh bridge ingest address")
+	routerEndpoint := flag.String("zenoh-router", getEnv("NEURON_ZENOH_ROUTER", "tcp/127.0.0.1:7447"), "Zenoh router peer endpoint")
+	listenAddr := flag.String("listen-addr", getEnv("NEURON_LISTEN_ADDR", "127.0.0.1:9090"), "Local optical mesh bridge ingest address")
+	metricsAddr := flag.String("metrics-addr", getEnv("NEURON_METRICS_ADDR", "127.0.0.1:9093"), "HTTP health and metrics listen address")
 	runOnce := flag.Bool("once", false, "Run single self-test frame and exit")
 	flag.Parse()
 
 	cfg := RelayConfig{
 		ZenohRouterEndpoint: *routerEndpoint,
 		ListenAddr:          *listenAddr,
+		MetricsAddr:         *metricsAddr,
 		PublishTimeout:      50 * time.Millisecond,
 	}
 
-	fmt.Fprintf(os.Stdout, "level=INFO ts=%d event=gateway_starting zenoh_router=%s listen_addr=%s\n",
-		time.Now().UnixMicro(), cfg.ZenohRouterEndpoint, cfg.ListenAddr)
+	fmt.Fprintf(os.Stdout, "level=INFO ts=%d event=gateway_starting zenoh_router=%s listen_addr=%s metrics_addr=%s\n",
+		time.Now().UnixMicro(), cfg.ZenohRouterEndpoint, cfg.ListenAddr, cfg.MetricsAddr)
 
 	publisher := &StdoutZenohMock{}
 	relay := NewGatewayRelay(cfg, publisher)
@@ -210,6 +288,8 @@ func main() {
 		fmt.Fprintf(os.Stdout, "level=INFO ts=%d event=gateway_ready mode=self_test_complete\n", time.Now().UnixMicro())
 		return
 	}
+
+	go relay.StartMetricsServer(ctx)
 
 	fmt.Fprintf(os.Stdout, "level=INFO ts=%d event=gateway_ready mode=relay_active\n", time.Now().UnixMicro())
 	_ = relay.ListenUDP(ctx)
