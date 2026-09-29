@@ -25,8 +25,8 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
-          cache: true
+          go-version: 'stable'
+          cache-dependency-path: gateway/go.sum
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -65,8 +65,8 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
-          cache: true
+          go-version: 'stable'
+          cache-dependency-path: gateway/go.sum
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -110,7 +110,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: 'stable'
 
       - name: Build Cross-Platform Standalone Binaries
         run: |
