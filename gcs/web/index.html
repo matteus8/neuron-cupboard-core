@@ -3,580 +3,363 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NEURON CUPBOARD // TACTICAL GCS</title>
+  <title>Bamboo Node // Swarm Monitor</title>
   <style>
     :root {
-      --bg: #090d12;
-      --card-bg: #111720;
-      --border: #1f2937;
-      --border-bright: #374151;
-      --text: #e2e8f0;
-      --text-muted: #94a3b8;
-      --green: #10b981;
-      --green-glow: rgba(16, 185, 129, 0.25);
-      --cyan: #06b6d4;
-      --cyan-glow: rgba(6, 182, 212, 0.25);
-      --amber: #f59e0b;
-      --red: #ef4444;
-      --radar-bg: #0b131e;
+      /* Bamboo & Panda Color Theme */
+      --bg: #101512;
+      --card-bg: #171f19;
+      --card-border: #233027;
+      --text: #f0fdf4;
+      --text-muted: #869e8f;
+      --bamboo-green: #34d399;
+      --bamboo-dark: #064e3b;
+      --bamboo-light: #d1fae5;
+      --amber: #fbbf24;
+      --red: #f87171;
       --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: var(--mono);
-      font-size: 13px;
-      line-height: 1.4;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.5;
+      padding: 24px;
+      max-width: 960px;
+      margin: 0 auto;
     }
+
+    /* Minimal Header */
     header {
-      background: var(--card-bg);
-      border-bottom: 1px solid var(--border);
-      padding: 10px 18px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-shrink: 0;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 24px;
     }
-    .header-title {
+
+    .brand {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
-    .logo-badge {
-      background: var(--green-glow);
-      color: var(--green);
-      border: 1px solid var(--green);
-      padding: 2px 8px;
-      font-weight: bold;
-      border-radius: 4px;
-      font-size: 11px;
-      letter-spacing: 1px;
+
+    .brand-icon {
+      font-size: 20px;
     }
-    .title-text {
-      font-size: 14px;
+
+    .brand-name {
+      font-size: 16px;
       font-weight: 700;
       letter-spacing: 0.5px;
       color: #fff;
     }
-    .metrics-strip {
-      display: flex;
-      gap: 18px;
-      align-items: center;
-    }
-    .metric-item {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-    }
-    .metric-label {
-      font-size: 10px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .metric-value {
-      font-size: 14px;
-      font-weight: bold;
-      color: var(--cyan);
-    }
-    .status-badge {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid var(--green);
-      color: var(--green);
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 600;
-    }
-    .pulse-dot {
-      width: 7px;
-      height: 7px;
-      background: var(--green);
-      border-radius: 50%;
-      animation: pulse 1.5s infinite;
-    }
-    @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-      70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-    }
-    main {
-      flex: 1;
-      display: grid;
-      grid-template-columns: 340px 1fr 380px;
-      gap: 12px;
-      padding: 12px;
-      min-height: 0;
-    }
-    .panel {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-    }
-    .panel-header {
-      padding: 8px 12px;
-      background: rgba(255, 255, 255, 0.02);
-      border-bottom: 1px solid var(--border);
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .panel-body {
-      flex: 1;
-      padding: 12px;
-      overflow-y: auto;
-      min-height: 0;
-    }
-    /* Radar View */
-    .radar-wrapper {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-    }
-    canvas#radar {
-      background: var(--radar-bg);
-      border: 1px solid var(--border-bright);
-      border-radius: 50%;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.6), inset 0 0 25px rgba(6, 182, 212, 0.05);
-    }
-    .radar-legend {
-      margin-top: 12px;
-      display: flex;
-      gap: 12px;
-      font-size: 11px;
-    }
-    .legend-item { display: flex; align-items: center; gap: 4px; }
-    .dot { width: 8px; height: 8px; border-radius: 50%; }
-    .dot-green { background: var(--green); }
-    .dot-cyan { background: var(--cyan); }
-    .dot-amber { background: var(--amber); }
-    .dot-red { background: var(--red); }
 
-    /* Swarm Node Cards */
-    .node-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 12px;
-    }
-    .node-card {
-      background: #0f151e;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      transition: border-color 0.2s;
-    }
-    .node-card.locked { border-color: var(--green); box-shadow: inset 0 0 10px var(--green-glow); }
-    .node-card.tracking { border-color: var(--cyan); }
-    .node-card.alert { border-color: var(--red); animation: borderPulse 1s infinite alternate; }
-    @keyframes borderPulse { from { border-color: var(--red); } to { border-color: rgba(239, 68, 68, 0.2); } }
-    .node-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      padding-bottom: 6px;
-    }
-    .node-id {
-      font-size: 13px;
-      font-weight: bold;
-      color: #fff;
-    }
-    .badge {
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-weight: 600;
-      text-transform: uppercase;
-    }
-    .badge-formation { background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid var(--green); }
-    .badge-search { background: rgba(6, 182, 212, 0.15); color: var(--cyan); border: 1px solid var(--cyan); }
-    .badge-dispersal { background: rgba(239, 68, 68, 0.15); color: var(--red); border: 1px solid var(--red); }
-    .node-field {
-      display: flex;
-      justify-content: space-between;
+    .brand-tag {
       font-size: 11px;
-    }
-    .node-field .label { color: var(--text-muted); }
-    .node-field .val { font-weight: 600; color: #fff; }
-    .node-flags {
-      display: flex;
-      gap: 6px;
-      margin-top: 4px;
-    }
-    .flag-pill {
-      font-size: 9px;
-      padding: 2px 5px;
-      border-radius: 3px;
-      background: #182230;
-      color: var(--text-muted);
-      border: 1px solid var(--border);
-    }
-    .flag-pill.active {
-      background: var(--green-glow);
-      color: var(--green);
-      border-color: var(--green);
-      font-weight: bold;
-    }
-    .flag-pill.active-warn {
-      background: rgba(239, 68, 68, 0.2);
-      color: var(--red);
-      border-color: var(--red);
-      font-weight: bold;
-    }
-
-    /* Packet Console */
-    .console {
-      font-size: 11px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      overflow-y: auto;
-      max-height: 100%;
-    }
-    .log-line {
-      display: flex;
-      gap: 8px;
-      padding: 3px 6px;
-      background: #090e15;
-      border-radius: 3px;
-      border-left: 2px solid var(--border);
-    }
-    .log-line.valid { border-left-color: var(--green); }
-    .log-line.warn { border-left-color: var(--amber); }
-    .log-time { color: var(--text-muted); flex-shrink: 0; }
-    .log-node { color: var(--cyan); font-weight: bold; flex-shrink: 0; }
-    .log-msg { color: #cbd5e1; word-break: break-all; }
-
-    /* Footer & Command Bar */
-    footer {
-      background: var(--card-bg);
-      border-top: 1px solid var(--border);
-      padding: 8px 18px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-shrink: 0;
-    }
-    .cmd-group {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-    .cmd-btn {
-      background: #192330;
-      border: 1px solid var(--border-bright);
-      color: var(--text);
-      padding: 5px 12px;
-      border-radius: 4px;
+      color: var(--bamboo-green);
       font-family: var(--mono);
-      font-size: 11px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s;
+      background: rgba(52, 211, 153, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+      padding: 2px 8px;
+      border-radius: 4px;
     }
-    .cmd-btn:hover { background: #223042; border-color: var(--cyan); color: #fff; }
-    .cmd-btn.danger { border-color: rgba(239, 68, 68, 0.4); color: #fca5a5; }
-    .cmd-btn.danger:hover { background: rgba(239, 68, 68, 0.2); border-color: var(--red); color: #fff; }
-    .footer-note { font-size: 11px; color: var(--text-muted); }
+
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--bamboo-green);
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--bamboo-green);
+    }
+
+    .stat-text {
+      color: var(--text-muted);
+    }
+
+    /* Main Grid: 2 Clean Sections */
+    main {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    /* Active Nodes Section */
+    .node-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .node-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .node-card.locked {
+      border-color: var(--bamboo-green);
+    }
+
+    .node-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .node-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .node-badge {
+      font-size: 11px;
+      font-family: var(--mono);
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(52, 211, 153, 0.15);
+      color: var(--bamboo-green);
+    }
+
+    .node-badge.amber {
+      background: rgba(251, 191, 36, 0.15);
+      color: var(--amber);
+    }
+
+    .node-badge.red {
+      background: rgba(248, 113, 113, 0.15);
+      color: var(--red);
+    }
+
+    .node-detail {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+    }
+
+    .detail-label {
+      color: var(--text-muted);
+    }
+
+    .detail-val {
+      font-family: var(--mono);
+      font-weight: 500;
+    }
+
+    .empty-state {
+      background: var(--card-bg);
+      border: 1px dashed var(--card-border);
+      border-radius: 8px;
+      padding: 32px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    /* Packet Stream Console */
+    .stream-container {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    .stream-console {
+      font-family: var(--mono);
+      font-size: 12px;
+      max-height: 240px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .stream-row {
+      display: flex;
+      gap: 12px;
+      color: var(--text-muted);
+      padding: 2px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .stream-time {
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .stream-node {
+      color: var(--bamboo-green);
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .stream-summary {
+      color: var(--text);
+    }
   </style>
 </head>
 <body>
 
   <header>
-    <div class="header-title">
-      <span class="logo-badge">OPTICAL MESH C2</span>
-      <span class="title-text">NEURON CUPBOARD // TACTICAL GROUND CONTROL</span>
+    <div class="brand">
+      <span class="brand-icon">🎋</span>
+      <span class="brand-name">Bamboo Node</span>
+      <span class="brand-tag">GCS MONITOR</span>
     </div>
-    <div class="metrics-strip">
-      <div class="metric-item">
-        <span class="metric-label">Active Nodes</span>
-        <span class="metric-value" id="val-nodes">0</span>
+    <div class="header-status">
+      <div class="live-indicator">
+        <span class="live-dot"></span>
+        <span id="conn-status">LIVE STREAM</span>
       </div>
-      <div class="metric-item">
-        <span class="metric-label">Ingest Rate</span>
-        <span class="metric-value" id="val-rate">0.0 Hz</span>
-      </div>
-      <div class="metric-item">
-        <span class="metric-label">Total Frames</span>
-        <span class="metric-value" id="val-frames">0</span>
-      </div>
-      <div class="status-badge" id="status-badge">
-        <div class="pulse-dot"></div>
-        <span id="status-text">CONNECTING</span>
-      </div>
+      <div class="stat-text" id="stat-frames">Frames: 0</div>
+      <div class="stat-text" id="stat-rate">0.0 Hz</div>
     </div>
   </header>
 
   <main>
-    <!-- Left Panel: Optical Bearing Radar -->
-    <section class="panel">
-      <div class="panel-header">
-        <span>Optical Bearing Radar</span>
-        <span style="color: var(--cyan);">FOV: ±350 mrad</span>
-      </div>
-      <div class="panel-body radar-wrapper">
-        <canvas id="radar" width="290" height="290"></canvas>
-        <div class="radar-legend">
-          <div class="legend-item"><span class="dot dot-green"></span> Hard Lock</div>
-          <div class="legend-item"><span class="dot dot-cyan"></span> Tracking</div>
-          <div class="legend-item"><span class="dot dot-amber"></span> Search</div>
-          <div class="legend-item"><span class="dot dot-red"></span> Alert</div>
-        </div>
+    <!-- Section 1: Detected Bamboo Nodes -->
+    <section>
+      <div class="section-title">Active Swarm Nodes</div>
+      <div class="node-list" id="node-list">
+        <div class="empty-state">Waiting for optical pulse frames...</div>
       </div>
     </section>
 
-    <!-- Center Panel: The Cupboard Swarm State -->
-    <section class="panel">
-      <div class="panel-header">
-        <span>The Cupboard (Decentralized Swarm Consensus)</span>
-        <span id="epoch-label" style="color: var(--green);">EPOCH 1</span>
-      </div>
-      <div class="panel-body">
-        <div class="node-grid" id="node-grid">
-          <!-- Dynamically populated node cards -->
-        </div>
-      </div>
-    </section>
-
-    <!-- Right Panel: Live Optical Pulse & Packet Feed -->
-    <section class="panel">
-      <div class="panel-header">
-        <span>Live Optical Wire Stream</span>
-        <span style="color: var(--text-muted);">CRC-8 CCITT</span>
-      </div>
-      <div class="panel-body">
-        <div class="console" id="packet-console">
-          <!-- Dynamically populated rolling packets -->
+    <!-- Section 2: Simple Decoded Packet Feed -->
+    <section>
+      <div class="section-title">Decoded Optical Packets</div>
+      <div class="stream-container">
+        <div class="stream-console" id="stream-console">
+          <div style="color: var(--text-muted);">No packets received yet.</div>
         </div>
       </div>
     </section>
   </main>
 
-  <footer>
-    <div class="cmd-group">
-      <span style="color: var(--text-muted); font-size: 11px; margin-right: 4px;">TACTICAL INJECT:</span>
-      <button class="cmd-btn" onclick="sendCommand(2, 'CMD_SET_MODE_FORMATION')">FORMATION LOCK</button>
-      <button class="cmd-btn" onclick="sendCommand(1, 'CMD_SET_MODE_SEARCH')">SEARCH PATTERN</button>
-      <button class="cmd-btn danger" onclick="sendCommand(3, 'CMD_SET_MODE_DISPERSAL')">DISPERSAL BREAK</button>
-      <button class="cmd-btn danger" onclick="sendCommand(4, 'CMD_EMISSION_SILENCE')">EMISSION SILENCE</button>
-    </div>
-    <div class="footer-note">
-      Surface Pro 3 GCS // Protocol: Zenoh + Protobuf // Physical: 850nm Manchester
-    </div>
-  </footer>
-
   <script>
-    // State storage
-    let swarmState = { active_nodes: [], stats: { total_frames: 0, packet_rate_hz: 0 }, recent_packets: [] };
-    let radarSweepAngle = 0;
+    const nodeList = document.getElementById('node-list');
+    const streamConsole = document.getElementById('stream-console');
+    const statFrames = document.getElementById('stat-frames');
+    const statRate = document.getElementById('stat-rate');
+    const connStatus = document.getElementById('conn-status');
 
-    // Canvas Radar Setup
-    const canvas = document.getElementById('radar');
-    const ctx = canvas.getContext('2d');
-    const center = canvas.width / 2;
-    const maxRadius = center - 15;
+    function cleanName(str) {
+      return (str || '').replace('MODE_', '').replace('LOCK_', '').replace('_', ' ');
+    }
 
-    function drawRadar() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Background circles
-      ctx.strokeStyle = '#1e293b';
-      ctx.lineWidth = 1;
-      [0.33, 0.66, 1.0].forEach(factor => {
-        ctx.beginPath();
-        ctx.arc(center, center, maxRadius * factor, 0, Math.PI * 2);
-        ctx.stroke();
-      });
-
-      // Crosshairs
-      ctx.strokeStyle = '#1e293b';
-      ctx.beginPath();
-      ctx.moveTo(center, 15); ctx.lineTo(center, canvas.height - 15);
-      ctx.moveTo(15, center); ctx.lineTo(canvas.width - 15, center);
-      ctx.stroke();
-
-      // Boresight axis label
-      ctx.fillStyle = '#64748b';
-      ctx.font = '9px monospace';
-      ctx.fillText('0° BORESIGHT', center - 30, 26);
-      ctx.fillText('-350 mrad', 18, center - 4);
-      ctx.fillText('+350 mrad', canvas.width - 65, center - 4);
-
-      // Radar sweep line
-      radarSweepAngle += 0.04;
-      if (radarSweepAngle > Math.PI * 2) radarSweepAngle = 0;
-      ctx.strokeStyle = 'rgba(6, 182, 212, 0.4)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(center, center);
-      ctx.lineTo(center + Math.cos(radarSweepAngle) * maxRadius, center + Math.sin(radarSweepAngle) * maxRadius);
-      ctx.stroke();
-
-      // Plot active nodes
-      if (swarmState.active_nodes) {
-        swarmState.active_nodes.forEach(node => {
-          // Map azimuth_mrad (-350 to +350) and elevation to canvas coordinates
-          const azMrad = node.azimuth_mrad || 0;
-          const elMrad = node.elevation_mrad || 0;
-          const x = center + (azMrad / 350.0) * (maxRadius * 0.85);
-          const y = center - (elMrad / 350.0) * (maxRadius * 0.85);
-
-          let color = '#06b6d4'; // cyan tracking
-          if (node.lock_status === 'LOCK_HARD_LOCKED') color = '#10b981'; // green hard lock
-          if (node.mode === 'MODE_DISPERSAL' || node.proximity_alert) color = '#ef4444'; // red alert
-          if (node.mode === 'MODE_SEARCH') color = '#f59e0b'; // amber search
-
-          // Blip glow
-          ctx.beginPath();
-          ctx.arc(x, y, 7, 0, Math.PI * 2);
-          ctx.fillStyle = color;
-          ctx.shadowBlur = 10;
-          ctx.shadowColor = color;
-          ctx.fill();
-          ctx.shadowBlur = 0;
-
-          // Node ID label
-          ctx.fillStyle = '#fff';
-          ctx.font = 'bold 10px monospace';
-          ctx.fillText(`N${node.node_id}`, x + 10, y + 3);
-        });
+    function render(data) {
+      // 1. Stats
+      if (data.stats) {
+        statFrames.innerText = `Frames: ${data.stats.total_frames || 0}`;
+        statRate.innerText = `${(data.stats.packet_rate_hz || 0).toFixed(1)} Hz`;
       }
 
-      requestAnimationFrame(drawRadar);
-    }
-    requestAnimationFrame(drawRadar);
-
-    // Update UI from Swarm State
-    function renderState() {
-      // Metrics
-      document.getElementById('val-nodes').innerText = swarmState.active_nodes ? swarmState.active_nodes.length : 0;
-      document.getElementById('val-frames').innerText = swarmState.stats ? swarmState.stats.total_frames : 0;
-      document.getElementById('val-rate').innerText = `${(swarmState.stats ? swarmState.stats.packet_rate_hz : 0).toFixed(1)} Hz`;
-
-      // Swarm Node Cards
-      const nodeGrid = document.getElementById('node-grid');
-      if (!swarmState.active_nodes || swarmState.active_nodes.length === 0) {
-        nodeGrid.innerHTML = '<div style="color: var(--text-muted); padding: 20px; grid-column: 1/-1; text-align: center;">NO ACTIVE OPTICAL TRANSMITTERS IN LINE-OF-SIGHT</div>';
+      // 2. Active Nodes
+      if (!data.active_nodes || data.active_nodes.length === 0) {
+        nodeList.innerHTML = '<div class="empty-state">Waiting for optical pulse frames...</div>';
       } else {
-        nodeGrid.innerHTML = swarmState.active_nodes.map(node => {
-          let cardClass = 'node-card';
-          if (node.lock_status === 'LOCK_HARD_LOCKED') cardClass += ' locked';
-          else if (node.lock_status === 'LOCK_BEARING_TRACKING') cardClass += ' tracking';
-          if (node.proximity_alert || node.mode === 'MODE_DISPERSAL') cardClass += ' alert';
+        nodeList.innerHTML = data.active_nodes.map(node => {
+          const isLocked = node.lock_status === 'LOCK_HARD_LOCKED';
+          let badgeClass = 'node-badge';
+          if (node.mode === 'MODE_SEARCH') badgeClass += ' amber';
+          if (node.mode === 'MODE_DISPERSAL') badgeClass += ' red';
 
-          let modeBadge = 'badge badge-formation';
-          if (node.mode === 'MODE_SEARCH') modeBadge = 'badge badge-search';
-          if (node.mode === 'MODE_DISPERSAL') modeBadge = 'badge badge-dispersal';
+          const lastSeenSec = ((Date.now() - (node.last_seen_ms || Date.now())) / 1000).toFixed(1);
 
           return `
-            <div class="${cardClass}">
-              <div class="node-header">
-                <span class="node-id">BAMBOO NODE #${node.node_id}</span>
-                <span class="${modeBadge}">${(node.mode || 'UNKNOWN').replace('MODE_', '')}</span>
+            <div class="node-card ${isLocked ? 'locked' : ''}">
+              <div class="node-top">
+                <span class="node-title">Bamboo Node #${node.node_id}</span>
+                <span class="${badgeClass}">${cleanName(node.mode)}</span>
               </div>
-              <div class="node-field">
-                <span class="label">Lock Quality</span>
-                <span class="val" style="color: ${node.lock_status === 'LOCK_HARD_LOCKED' ? 'var(--green)' : 'var(--cyan)'};">
-                  ${(node.lock_status || 'NONE').replace('LOCK_', '')}
+              <div class="node-detail">
+                <span class="detail-label">Optical Lock</span>
+                <span class="detail-val" style="color: ${isLocked ? 'var(--bamboo-green)' : 'var(--text)'};">
+                  ${cleanName(node.lock_status)}
                 </span>
               </div>
-              <div class="node-field">
-                <span class="label">Optical Bearing</span>
-                <span class="val">AZ: ${node.azimuth_mrad || 0} mrad | EL: ${node.elevation_mrad || 0} mrad</span>
+              <div class="node-detail">
+                <span class="detail-label">Azimuth Bearing</span>
+                <span class="detail-val">${node.azimuth_mrad || 0} mrad</span>
               </div>
-              <div class="node-field">
-                <span class="label">Sequence / CRC</span>
-                <span class="val">#${node.sequence_num || 0} | 0x${(node.crc8 || 0).toString(16).toUpperCase().padStart(2, '0')}</span>
+              <div class="node-detail">
+                <span class="detail-label">Packet Sequence</span>
+                <span class="detail-val">#${node.sequence_num || 0} (CRC 0x${(node.crc8 || 0).toString(16).toUpperCase().padStart(2, '0')})</span>
               </div>
-              <div class="node-field">
-                <span class="label">Last Seen</span>
-                <span class="val">${((Date.now() - (node.last_seen_ms || Date.now())) / 1000).toFixed(1)}s ago</span>
-              </div>
-              <div class="node-flags">
-                <span class="flag-pill ${node.consensus_ack ? 'active' : ''}">ACK: ${node.consensus_ack ? 'YES' : 'NO'}</span>
-                <span class="flag-pill ${node.proximity_alert ? 'active-warn' : ''}">PROX: ${node.proximity_alert ? 'ALERT' : 'CLR'}</span>
-                <span class="flag-pill ${node.swap_critical ? 'active-warn' : ''}">SWAP: ${node.swap_critical ? 'CRIT' : 'NOM'}</span>
+              <div class="node-detail">
+                <span class="detail-label">Last Seen</span>
+                <span class="detail-val">${lastSeenSec}s ago</span>
               </div>
             </div>
           `;
         }).join('');
       }
 
-      // Recent Packet Console
-      const consoleEl = document.getElementById('packet-console');
-      if (swarmState.recent_packets && swarmState.recent_packets.length > 0) {
-        consoleEl.innerHTML = swarmState.recent_packets.map(pkt => `
-          <div class="log-line valid">
-            <span class="log-time">${pkt.time || ''}</span>
-            <span class="log-node">N${pkt.node_id}</span>
-            <span class="log-msg">${pkt.summary || ''}</span>
+      // 3. Simple Packet Stream
+      if (data.recent_packets && data.recent_packets.length > 0) {
+        streamConsole.innerHTML = data.recent_packets.slice(0, 15).map(pkt => `
+          <div class="stream-row">
+            <span class="stream-time">${pkt.time || ''}</span>
+            <span class="stream-node">Node ${pkt.node_id}</span>
+            <span class="stream-summary">${pkt.summary || ''}</span>
           </div>
         `).join('');
       }
     }
 
-    // Connect to Server-Sent Events (SSE)
-    function connectSSE() {
-      const evtSource = new EventSource('/events');
-      const badge = document.getElementById('status-badge');
-      const text = document.getElementById('status-text');
-
-      evtSource.onopen = () => {
-        text.innerText = 'ONLINE // SSE LINK';
-        badge.style.borderColor = 'var(--green)';
-        badge.style.color = 'var(--green)';
+    // Connect Server-Sent Events
+    function connect() {
+      const evt = new EventSource('/events');
+      evt.onopen = () => {
+        connStatus.innerText = 'LIVE STREAM';
+        connStatus.style.color = 'var(--bamboo-green)';
       };
-
-      evtSource.onmessage = (e) => {
+      evt.onmessage = (e) => {
         try {
-          swarmState = JSON.parse(e.data);
-          renderState();
-        } catch (err) {
-          console.error('SSE parse error:', err);
-        }
+          render(JSON.parse(e.data));
+        } catch (err) {}
       };
-
-      evtSource.onerror = () => {
-        text.innerText = 'RECONNECTING...';
-        badge.style.borderColor = 'var(--amber)';
-        badge.style.color = 'var(--amber)';
+      evt.onerror = () => {
+        connStatus.innerText = 'CONNECTING...';
+        connStatus.style.color = 'var(--amber)';
       };
     }
-    connectSSE();
-
-    // Command Dispatcher
-    function sendCommand(cmdType, cmdName) {
-      fetch('/api/command', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target_node_id: 0, command_type: cmdType })
-      }).then(res => res.json()).then(data => {
-        console.log(`Command ${cmdName} dispatched:`, data);
-      }).catch(err => {
-        console.error(`Failed to dispatch ${cmdName}:`, err);
-      });
-    }
+    connect();
   </script>
 </body>
 </html>

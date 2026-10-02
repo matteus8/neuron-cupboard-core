@@ -82,7 +82,7 @@ func TestGCSHttpEndpoints(t *testing.T) {
 	if recIndex.Code != http.StatusOK {
 		t.Fatalf("expected status 200 for index, got %d", recIndex.Code)
 	}
-	if !bytes.Contains(recIndex.Body.Bytes(), []byte("NEURON CUPBOARD // TACTICAL GROUND CONTROL")) {
+	if !bytes.Contains(recIndex.Body.Bytes(), []byte("Bamboo Node")) {
 		t.Errorf("index HTML does not contain expected title")
 	}
 
