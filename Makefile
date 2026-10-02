@@ -86,16 +86,30 @@ build-firmware:
 		echo "  [OK] bin/bamboo_node_sim created"; \
 	fi
 
-release-build: build-firmware
+package-runtime:
+	@echo "==> Packaging Panda Runtime for Raspberry Pi 5..."
+	@mkdir -p bin /tmp/panda-pkg
+	@rm -rf /tmp/panda-pkg/*
+	@cp -r runtime /tmp/panda-pkg/
+	@cp -r proto /tmp/panda-pkg/
+	@cp runtime/requirements.txt /tmp/panda-pkg/
+	@cp deploy/systemd/panda-runtime.service /tmp/panda-pkg/
+	@cp deploy/install_runtime.sh /tmp/panda-pkg/install.sh
+	@chmod +x /tmp/panda-pkg/install.sh
+	@tar -czf bin/panda-runtime.tar.gz -C /tmp/panda-pkg .
+	@rm -rf /tmp/panda-pkg
+	@echo "  [OK] bin/panda-runtime.tar.gz created"
+
+release-build: build-firmware package-runtime
 	@echo "==> Cross-compiling lightweight standalone native binaries..."
 	@mkdir -p bin
 	@cd gateway && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o ../bin/gateway-linux-arm64 .
 	@cd gateway && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o ../bin/gateway-linux-amd64 .
 	@cd gateway && CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o ../bin/gateway-darwin-arm64 .
 	@cd bin && if command -v sha256sum >/dev/null 2>&1; then \
-		sha256sum gateway-* $$(ls bamboo_node.uf2 2>/dev/null || true) > checksums.sha256; \
+		sha256sum gateway-* $$(ls bamboo_node.uf2 panda-runtime.tar.gz 2>/dev/null || true) > checksums.sha256; \
 	else \
-		shasum -a 256 gateway-* $$(ls bamboo_node.uf2 2>/dev/null || true) > checksums.sha256; \
+		shasum -a 256 gateway-* $$(ls bamboo_node.uf2 panda-runtime.tar.gz 2>/dev/null || true) > checksums.sha256; \
 	fi
 	@echo "  [OK] Release artifacts generated in bin/:"
 	@ls -lh bin/
