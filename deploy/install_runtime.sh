@@ -9,6 +9,7 @@ set -euo pipefail
 INSTALL_DIR="/opt/neuron-cupboard"
 SERVICE_NAME="panda-runtime.service"
 SYSTEMD_DIR="/etc/systemd/system"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "================================================================="
 echo "   NEURON CUPBOARD: PANDA RUNTIME EDGE INSTALLER (PI 5)"
@@ -35,11 +36,14 @@ fi
 # 3. Deploy files to /opt/neuron-cupboard
 echo "[+] Installing Panda Runtime to $INSTALL_DIR..."
 mkdir -p "$INSTALL_DIR"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Copy runtime, proto, and requirements
+# Copy runtime, proto, scripts, and requirements
 cp -r "$SCRIPT_DIR/runtime" "$INSTALL_DIR/"
 cp -r "$SCRIPT_DIR/proto" "$INSTALL_DIR/"
+if [[ -d "$SCRIPT_DIR/scripts" ]]; then
+    cp -r "$SCRIPT_DIR/scripts" "$INSTALL_DIR/"
+    chmod +x "$INSTALL_DIR/scripts"/*.py 2>/dev/null || true
+fi
 cp "$SCRIPT_DIR/requirements.txt" "$INSTALL_DIR/"
 
 # 4. Fallback pip install if needed
@@ -56,6 +60,7 @@ chmod -R 755 "$INSTALL_DIR"
 if [[ -f "$SCRIPT_DIR/$SERVICE_NAME" ]]; then
     echo "[+] Registering and enabling $SERVICE_NAME..."
     cp "$SCRIPT_DIR/$SERVICE_NAME" "$SYSTEMD_DIR/"
+    chmod 644 "$SYSTEMD_DIR/$SERVICE_NAME"
     if command -v systemctl &>/dev/null; then
         systemctl daemon-reload
         systemctl enable "$SERVICE_NAME"
@@ -65,6 +70,25 @@ if [[ -f "$SCRIPT_DIR/$SERVICE_NAME" ]]; then
     fi
 fi
 
+# 7. Auto-detect and configure Tactical Gateway if binary is present
+if [[ -f "$SCRIPT_DIR/install_gateway.sh" ]]; then
+    for g_cand in \
+        "$SCRIPT_DIR/gateway-linux-arm64" \
+        "$SCRIPT_DIR/gateway" \
+        "$SCRIPT_DIR/../gateway-linux-arm64" \
+        "$(pwd)/gateway-linux-arm64" \
+        "$(pwd)/gateway"; do
+        if [[ -f "$g_cand" ]]; then
+            echo "[+] Detected Gateway binary ($g_cand). Installing Tactical Gateway..."
+            bash "$SCRIPT_DIR/install_gateway.sh" "$g_cand" || true
+            break
+        fi
+    done
+fi
+
 echo "================================================================="
 echo "   INSTALLATION COMPLETE: Node ready for optical reception"
+if [[ -f "$INSTALL_DIR/scripts/bench_tool.py" ]]; then
+    echo "   Bench Diagnostics: python3 $INSTALL_DIR/scripts/bench_tool.py --mode=scan"
+fi
 echo "================================================================="
