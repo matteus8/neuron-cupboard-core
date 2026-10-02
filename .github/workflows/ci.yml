@@ -103,14 +103,18 @@ jobs:
       - name: Verify Build
         run: |
           make build
+          make package-runtime
           ls -lh bin/gateway
           ls -lh bin/bamboo_node.uf2
+          ls -lh bin/panda-runtime.tar.gz
 
-      - name: Archive Firmware Artifact
+      - name: Archive Firmware & Runtime Artifacts
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: bamboo-node-firmware
-          path: bin/bamboo_node.uf2
+          name: bamboo-node-payload-artifacts
+          path: |
+            bin/bamboo_node.uf2
+            bin/panda-runtime.tar.gz
           if-no-files-found: error
 
   release:
@@ -144,6 +148,7 @@ jobs:
         with:
           files: |
             bin/bamboo_node.uf2
+            bin/panda-runtime.tar.gz
             bin/gateway-linux-arm64
             bin/gateway-linux-amd64
             bin/gateway-darwin-arm64
@@ -154,13 +159,14 @@ jobs:
             | Artifact File | Target Hardware | Execution Role & How to Install |
             | :--- | :--- | :--- |
             | **`bamboo_node.uf2`** | **Raspberry Pi Pico H** (RP2040 MCU) | **Optical Transmitter:** Hold `BOOTSEL` while connecting Pico via USB (`RPI-RP2` drive). Drag & drop this file. Pico auto-reboots and emits 850nm Manchester pulses on GP15. |
+            | **`panda-runtime.tar.gz`** | **Raspberry Pi 5** (Raspberry Pi OS Lite 64-bit) | **Panda Vision & Consensus Engine:** Extract on Pi 5 and run installer: `tar -xzf panda-runtime.tar.gz && sudo ./install.sh`. Sets up `/opt/neuron-cupboard` and systemd auto-start. |
             | **`gateway-linux-arm64`** | **Raspberry Pi 5** (64-bit ARM) | **Tactical Relay Daemon:** Bridges physical optical mesh packets to Eclipse Zenoh networks. Run standalone or enable via `deploy/systemd/neuron-gateway.service`. |
             | **`gateway-linux-amd64`** | **x86_64 Workstations / Servers** | **Tactical Command Post Bridge:** Ingests swarm state vectors on tactical edge servers and Linux ground stations. |
             | **`gateway-darwin-arm64`** | **Apple Silicon Mac** (macOS) | **Local Telemetry & Dev Bridge:** Local simulation and real-time monitoring on macOS workstations. |
             | **`checksums.sha256`** | All Platforms | **Verification Manifest:** Cryptographic SHA-256 hashes for all release artifacts (`sha256sum -c checksums.sha256`). |
 
-            > [!TIP]
-            > **Panda Edge Compute Runtime (`runtime/`):** Runs on the **Raspberry Pi 5** host OS (requires Python 3 + OpenCV). It ingests video from the Camera Module 3 NoIR, detects optical centroids, decodes pulses, and updates swarm consensus. Launch via `python3 -m runtime.panda.engine` or install the systemd unit `deploy/systemd/panda-runtime.service`.
+            > [!IMPORTANT]
+            > **Target OS for Raspberry Pi 5:** Use **Raspberry Pi OS Lite (64-bit, Debian Bookworm)**. The "Lite" edition is recommended for headless drone payloads because it eliminates desktop/GUI overhead while providing kernel-level hardware drivers for the RP1 southbridge, VideoCore ISP, and Camera Module 3 NoIR (`libcamera`).
           generate_release_notes: false
           draft: false
           prerelease: false
