@@ -16,6 +16,17 @@ echo "================================================================="
 echo "   NEURON CUPBOARD: TACTICAL ZENOH GATEWAY INSTALLER (ARM64)"
 echo "================================================================="
 
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+    echo "Usage: sudo ./install_gateway.sh [PATH_TO_GATEWAY_BINARY]"
+    echo ""
+    echo "Installs the Tactical Zenoh Gateway daemon to /opt/neuron-cupboard/bin/gateway"
+    echo "and registers/starts neuron-gateway.service."
+    echo ""
+    echo "Configuration file: /etc/default/neuron-gateway"
+    echo "To view binary runtime options: /opt/neuron-cupboard/bin/gateway --help"
+    exit 0
+fi
+
 if [[ $EUID -ne 0 ]]; then
    echo "[!] Error: This script must be run as root (use sudo ./install_gateway.sh)" >&2
    exit 1

@@ -38,6 +38,10 @@ test-gateway:
 	@echo "==> Testing gateway (Zenoh Protobuf relay with Go race detector)..."
 	@cd gateway && go test -v -race ./...
 
+test-gcs:
+	@echo "==> Testing GCS (Ground Control Station HUD with Go race detector)..."
+	@cd gcs && go test -v -race ./...
+
 test-sim:
 	@echo "==> Running End-to-End Multi-Node Optical Swarm Simulation..."
 	@PYTHONPATH=. python3 scripts/simulate_swarm.py
@@ -46,7 +50,7 @@ bench:
 	@echo "==> Running Gateway Throughput and Allocation Benchmarks..."
 	@cd gateway && go test -bench=. -benchmem -run=^$$ ./...
 
-test: test-proto test-firmware test-runtime test-gateway test-sim
+test: test-proto test-firmware test-runtime test-gateway test-gcs test-sim
 	@echo "==> All subsystem and end-to-end simulation tests passed successfully."
 
 sast: sast-go sast-python sast-c
@@ -55,8 +59,9 @@ sast: sast-go sast-python sast-c
 sast-go:
 	@echo "==> Running Go SAST (go vet, govulncheck, gosec)..."
 	@cd gateway && go vet ./...
-	@if command -v govulncheck >/dev/null 2>&1; then cd gateway && govulncheck ./...; else echo "WARN: govulncheck not installed"; fi
-	@if command -v gosec >/dev/null 2>&1; then cd gateway && gosec -quiet ./...; else echo "WARN: gosec not installed"; fi
+	@cd gcs && go vet ./...
+	@if command -v govulncheck >/dev/null 2>&1; then cd gateway && govulncheck ./... && cd ../gcs && govulncheck ./...; else echo "WARN: govulncheck not installed"; fi
+	@if command -v gosec >/dev/null 2>&1; then cd gateway && gosec -quiet ./... && cd ../gcs && gosec -quiet ./...; else echo "WARN: gosec not installed"; fi
 
 sast-python:
 	@echo "==> Running Python SAST (bandit)..."
@@ -70,10 +75,11 @@ sast-c:
 	@echo "  [OK] C static security audit clean."
 
 build: build-firmware
-	@echo "==> Building Gateway..."
+	@echo "==> Building Gateway & GCS..."
 	@mkdir -p bin
 	@cd gateway && go build -o ../bin/gateway .
-	@echo "  [OK] bin/gateway created"
+	@cd gcs && go build -o ../bin/gcs .
+	@echo "  [OK] bin/gateway and bin/gcs created"
 
 build-firmware:
 	@mkdir -p bin
@@ -109,10 +115,13 @@ release-build: build-firmware package-runtime
 	@cd gateway && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o ../bin/gateway-linux-arm64 .
 	@cd gateway && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o ../bin/gateway-linux-amd64 .
 	@cd gateway && CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o ../bin/gateway-darwin-arm64 .
+	@cd gcs && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o ../bin/gcs-linux-arm64 .
+	@cd gcs && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o ../bin/gcs-linux-amd64 .
+	@cd gcs && CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o ../bin/gcs-darwin-arm64 .
 	@cd bin && if command -v sha256sum >/dev/null 2>&1; then \
-		sha256sum gateway-* $$(ls bamboo_node.uf2 panda-runtime.tar.gz 2>/dev/null || true) > checksums.sha256; \
+		sha256sum gateway-* gcs-* $$(ls bamboo_node.uf2 panda-runtime.tar.gz 2>/dev/null || true) > checksums.sha256; \
 	else \
-		shasum -a 256 gateway-* $$(ls bamboo_node.uf2 panda-runtime.tar.gz 2>/dev/null || true) > checksums.sha256; \
+		shasum -a 256 gateway-* gcs-* $$(ls bamboo_node.uf2 panda-runtime.tar.gz 2>/dev/null || true) > checksums.sha256; \
 	fi
 	@echo "  [OK] Release artifacts generated in bin/:"
 	@ls -lh bin/
