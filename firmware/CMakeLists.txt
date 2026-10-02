@@ -24,6 +24,10 @@ if (DEFINED PICO_SDK_PATH AND EXISTS "${PICO_SDK_PATH}/pico_sdk_init.cmake")
         ${CMAKE_CURRENT_LIST_DIR}/../proto/c
     )
 
+    target_compile_definitions(bamboo_node PRIVATE
+        PICO_BOARD=1
+    )
+
     target_link_libraries(bamboo_node
         pico_stdlib
         hardware_timer

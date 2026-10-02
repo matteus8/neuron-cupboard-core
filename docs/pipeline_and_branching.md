@@ -45,7 +45,8 @@ make sast
 
 In adherence to the Neuron Cupboard SWaP (Size, Weight, and Power) engineering constraints:
 * **No Docker Daemons or Containers:** Drones and microcontrollers run bare-metal or native headless processes. Containers add storage overhead, memory fragmentation, and non-deterministic process scheduling latency.
-* **Native Standalone Binaries:** The release pipeline cross-compiles statically linked, stripped binaries with zero runtime dependencies:
+* **Native Standalone Binaries & Firmware:** The release pipeline cross-compiles statically linked, stripped binaries and bare-metal microcontroller firmware with zero runtime dependencies:
+  - `bamboo_node.uf2`: Bare-metal optical transmitter firmware for the Raspberry Pi Pico H (RP2040 MCU) with cycle-accurate PIO Manchester modulation.
   - `gateway-linux-arm64`: Targeted for Raspberry Pi 5 / ARM Cortex-A76 edge nodes.
   - `gateway-linux-amd64`: Targeted for tactical x86_64 edge workstations and Zenoh routers.
   - `gateway-darwin-arm64`: Targeted for local flight telemetry and simulation on macOS.

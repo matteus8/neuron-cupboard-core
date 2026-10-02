@@ -79,20 +79,24 @@ build-firmware:
 	@mkdir -p bin
 	@if [ -n "$$PICO_SDK_PATH" ] && command -v cmake >/dev/null 2>&1; then \
 		echo "==> Building RP2040 firmware (Pico SDK)..."; \
-		mkdir -p firmware/build && cd firmware/build && cmake .. && cmake --build . && cp -f bamboo_node.uf2 ../../bin/ 2>/dev/null || true; \
+		mkdir -p firmware/build && cd firmware/build && cmake .. && cmake --build . && cp -f bamboo_node.uf2 ../../bin/ && echo "  [OK] bin/bamboo_node.uf2 created"; \
 	else \
 		echo "==> Building firmware host simulation binary..."; \
 		$(CC) $(CFLAGS) -Ifirmware/include -Iproto/c firmware/src/manchester.c firmware/src/main.c -o bin/bamboo_node_sim; \
 		echo "  [OK] bin/bamboo_node_sim created"; \
 	fi
 
-release-build:
+release-build: build-firmware
 	@echo "==> Cross-compiling lightweight standalone native binaries..."
 	@mkdir -p bin
 	@cd gateway && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o ../bin/gateway-linux-arm64 .
 	@cd gateway && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o ../bin/gateway-linux-amd64 .
 	@cd gateway && CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o ../bin/gateway-darwin-arm64 .
-	@cd bin && if command -v sha256sum >/dev/null 2>&1; then sha256sum gateway-* > checksums.sha256; else shasum -a 256 gateway-* > checksums.sha256; fi
+	@cd bin && if command -v sha256sum >/dev/null 2>&1; then \
+		sha256sum gateway-* $$(ls bamboo_node.uf2 2>/dev/null || true) > checksums.sha256; \
+	else \
+		shasum -a 256 gateway-* $$(ls bamboo_node.uf2 2>/dev/null || true) > checksums.sha256; \
+	fi
 	@echo "  [OK] Release artifacts generated in bin/:"
 	@ls -lh bin/
 
