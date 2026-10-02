@@ -92,10 +92,13 @@ package-runtime:
 	@rm -rf /tmp/panda-pkg/*
 	@cp -r runtime /tmp/panda-pkg/
 	@cp -r proto /tmp/panda-pkg/
+	@cp -r scripts /tmp/panda-pkg/
 	@cp runtime/requirements.txt /tmp/panda-pkg/
 	@cp deploy/systemd/panda-runtime.service /tmp/panda-pkg/
+	@cp deploy/systemd/neuron-gateway.service /tmp/panda-pkg/
 	@cp deploy/install_runtime.sh /tmp/panda-pkg/install.sh
-	@chmod +x /tmp/panda-pkg/install.sh
+	@cp deploy/install_gateway.sh /tmp/panda-pkg/install_gateway.sh
+	@chmod +x /tmp/panda-pkg/install.sh /tmp/panda-pkg/install_gateway.sh /tmp/panda-pkg/scripts/*.py
 	@tar -czf bin/panda-runtime.tar.gz -C /tmp/panda-pkg .
 	@rm -rf /tmp/panda-pkg
 	@echo "  [OK] bin/panda-runtime.tar.gz created"

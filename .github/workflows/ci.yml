@@ -154,16 +154,16 @@ jobs:
             bin/gateway-darwin-arm64
             bin/checksums.sha256
           body: |
-            ### Release Artifacts & Target Hardware Quick Reference
+            ### Target Hardware Payloads & Deployment Quick Reference
 
-            | Artifact File | Target Hardware | Execution Role & How to Install |
+            | Target Hardware | Artifact File | Execution Role & Deployment |
             | :--- | :--- | :--- |
-            | **`bamboo_node.uf2`** | **Raspberry Pi Pico H** (RP2040 MCU) | **Optical Transmitter:** Hold `BOOTSEL` while connecting Pico via USB (`RPI-RP2` drive). Drag & drop this file. Pico auto-reboots and emits 850nm Manchester pulses on GP15. |
-            | **`panda-runtime.tar.gz`** | **Raspberry Pi 5** (Raspberry Pi OS Lite 64-bit) | **Panda Vision & Consensus Engine:** Extract on Pi 5 and run installer: `tar -xzf panda-runtime.tar.gz && sudo ./install.sh`. Sets up `/opt/neuron-cupboard` and systemd auto-start. |
-            | **`gateway-linux-arm64`** | **Raspberry Pi 5** (64-bit ARM) | **Tactical Relay Daemon:** Bridges physical optical mesh packets to Eclipse Zenoh networks. Run standalone or enable via `deploy/systemd/neuron-gateway.service`. |
-            | **`gateway-linux-amd64`** | **x86_64 Workstations / Servers** | **Tactical Command Post Bridge:** Ingests swarm state vectors on tactical edge servers and Linux ground stations. |
-            | **`gateway-darwin-arm64`** | **Apple Silicon Mac** (macOS) | **Local Telemetry & Dev Bridge:** Local simulation and real-time monitoring on macOS workstations. |
-            | **`checksums.sha256`** | All Platforms | **Verification Manifest:** Cryptographic SHA-256 hashes for all release artifacts (`sha256sum -c checksums.sha256`). |
+            | **Raspberry Pi Pico H** (RP2040 MCU) | **`bamboo_node.uf2`** | **Optical Emitter Firmware:** Hold `BOOTSEL` button while connecting Pico via USB (`RPI-RP2` drive). Drag & drop `bamboo_node.uf2`. The Pico auto-reboots and broadcasts 850nm Manchester pulse trains on GP15. |
+            | **Raspberry Pi 5** (Raspberry Pi OS Lite 64-bit) | **`panda-runtime.tar.gz`** | **Panda Vision & Swarm Engine:** Extract on Pi 5: `tar -xzf panda-runtime.tar.gz && sudo ./install.sh`. Configures zero-bloat OpenCV blob tracking, hardware VideoCore ISP ingest, bench tools, and auto-starts `panda-runtime.service`. |
+            | **Raspberry Pi 5** (Raspberry Pi OS Lite 64-bit) | **`gateway-linux-arm64`** | **Tactical Zenoh Relay Bridge:** Bridges optical mesh packets to Eclipse Zenoh for external telemetry/C2. Install using `sudo ./install_gateway.sh gateway-linux-arm64` (or let `./install.sh` auto-detect it). |
+
+            > [!NOTE]
+            > **Auxiliary Tactical C2 & Workstation Builds:** `gateway-linux-amd64` (x86_64 Linux) and `gateway-darwin-arm64` (Apple Silicon Mac) are available under Assets for tactical command post relays, ground station telemetry, and local development. All release artifacts are signed in `checksums.sha256` (`sha256sum -c checksums.sha256`).
 
             > [!IMPORTANT]
             > **Target OS for Raspberry Pi 5:** Use **Raspberry Pi OS Lite (64-bit, Debian Bookworm)**. The "Lite" edition is recommended for headless drone payloads because it eliminates desktop/GUI overhead while providing kernel-level hardware drivers for the RP1 southbridge, VideoCore ISP, and Camera Module 3 NoIR (`libcamera`).
