@@ -161,6 +161,6 @@ jobs:
 
             > [!TIP]
             > **Panda Edge Compute Runtime (`runtime/`):** Runs on the **Raspberry Pi 5** host OS (requires Python 3 + OpenCV). It ingests video from the Camera Module 3 NoIR, detects optical centroids, decodes pulses, and updates swarm consensus. Launch via `python3 -m runtime.panda.engine` or install the systemd unit `deploy/systemd/panda-runtime.service`.
-          generate_release_notes: true
+          generate_release_notes: false
           draft: false
           prerelease: false
