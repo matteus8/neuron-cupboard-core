@@ -55,8 +55,11 @@ func TestSwarmMonitorIngestAndSnapshot(t *testing.T) {
 	if snap.Stats.TotalFrames != 1 {
 		t.Errorf("expected total frames 1, got %d", snap.Stats.TotalFrames)
 	}
-	if len(snap.RecentPackets) != 1 {
-		t.Errorf("expected 1 recent packet, got %d", len(snap.RecentPackets))
+	if snap.LatestPulse == nil || snap.LatestPulse.NodeId != 42 {
+		t.Errorf("expected latest pulse from node 42, got %+v", snap.LatestPulse)
+	}
+	if len(snap.Events) == 0 {
+		t.Errorf("expected at least 1 state event, got %d", len(snap.Events))
 	}
 }
 

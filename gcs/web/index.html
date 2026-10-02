@@ -7,14 +7,14 @@
   <style>
     :root {
       /* Bamboo & Panda Color Theme */
-      --bg: #101512;
-      --card-bg: #171f19;
-      --card-border: #233027;
+      --bg: #0d120f;
+      --card-bg: #141c16;
+      --card-border: #1f2d22;
+      --card-border-active: #2d4232;
       --text: #f0fdf4;
-      --text-muted: #869e8f;
+      --text-muted: #7b9483;
       --bamboo-green: #34d399;
-      --bamboo-dark: #064e3b;
-      --bamboo-light: #d1fae5;
+      --bamboo-green-glow: rgba(52, 211, 153, 0.12);
       --amber: #fbbf24;
       --red: #f87171;
       --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
@@ -27,10 +27,10 @@
       background: var(--bg);
       color: var(--text);
       font-family: var(--sans);
-      font-size: 14px;
+      font-size: 13px;
       line-height: 1.5;
       padding: 24px;
-      max-width: 960px;
+      max-width: 900px;
       margin: 0 auto;
     }
 
@@ -39,9 +39,9 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-bottom: 20px;
+      padding-bottom: 16px;
       border-bottom: 1px solid var(--card-border);
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
 
     .brand {
@@ -51,30 +51,30 @@
     }
 
     .brand-icon {
-      font-size: 20px;
+      font-size: 18px;
     }
 
     .brand-name {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 700;
-      letter-spacing: 0.5px;
       color: #fff;
+      letter-spacing: 0.3px;
     }
 
     .brand-tag {
       font-size: 11px;
       color: var(--bamboo-green);
       font-family: var(--mono);
-      background: rgba(52, 211, 153, 0.1);
-      border: 1px solid rgba(52, 211, 153, 0.3);
-      padding: 2px 8px;
+      background: var(--bamboo-green-glow);
+      border: 1px solid rgba(52, 211, 153, 0.25);
+      padding: 1px 7px;
       border-radius: 4px;
     }
 
-    .header-status {
+    .header-controls {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 14px;
       font-family: var(--mono);
       font-size: 12px;
     }
@@ -84,152 +84,206 @@
       align-items: center;
       gap: 6px;
       color: var(--bamboo-green);
+      font-weight: 600;
     }
 
     .live-dot {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
       background: var(--bamboo-green);
+    }
+
+    .pause-btn {
+      background: #1a251e;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-family: var(--mono);
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .pause-btn:hover {
+      color: #fff;
+      border-color: var(--bamboo-green);
+    }
+
+    .pause-btn.paused {
+      background: rgba(251, 191, 36, 0.15);
+      border-color: var(--amber);
+      color: var(--amber);
+      font-weight: bold;
     }
 
     .stat-text {
       color: var(--text-muted);
     }
 
-    /* Main Grid: 2 Clean Sections */
+    /* Main Stack */
     main {
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 20px;
     }
 
-    .section-title {
-      font-size: 12px;
-      font-weight: 600;
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 1px;
       color: var(--text-muted);
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
 
-    /* Active Nodes Section */
-    .node-list {
+    /* Section 1: Anchored Swarm Cards */
+    .node-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 14px;
     }
 
     .node-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 8px;
-      padding: 16px;
+      border-radius: 6px;
+      padding: 14px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
     }
 
     .node-card.locked {
-      border-color: var(--bamboo-green);
+      border-color: rgba(52, 211, 153, 0.4);
     }
 
-    .node-top {
+    .card-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
 
     .node-title {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 700;
       color: #fff;
     }
 
-    .node-badge {
-      font-size: 11px;
+    .badge {
+      font-size: 10px;
       font-family: var(--mono);
       font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 4px;
-      background: rgba(52, 211, 153, 0.15);
+      padding: 1px 6px;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }
+
+    .badge-green {
+      background: var(--bamboo-green-glow);
+      color: var(--bamboo-green);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+    }
+
+    .badge-amber {
+      background: rgba(251, 191, 36, 0.12);
+      color: var(--amber);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+    }
+
+    .badge-red {
+      background: rgba(248, 113, 113, 0.12);
+      color: var(--red);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+    }
+
+    .field-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+
+    .field-label {
+      color: var(--text-muted);
+    }
+
+    .field-val {
+      font-family: var(--mono);
+      font-weight: 500;
+      color: #fff;
+    }
+
+    /* Section 2: Anchored Latest Pulse Inspector */
+    .pulse-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .pulse-title {
+      color: var(--text-muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .pulse-data {
+      display: flex;
+      gap: 16px;
+      color: var(--text);
+    }
+
+    .pulse-data span {
       color: var(--bamboo-green);
     }
 
-    .node-badge.amber {
-      background: rgba(251, 191, 36, 0.15);
-      color: var(--amber);
-    }
-
-    .node-badge.red {
-      background: rgba(248, 113, 113, 0.15);
-      color: var(--red);
-    }
-
-    .node-detail {
-      display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-    }
-
-    .detail-label {
-      color: var(--text-muted);
-    }
-
-    .detail-val {
-      font-family: var(--mono);
-      font-weight: 500;
-    }
-
-    .empty-state {
-      background: var(--card-bg);
-      border: 1px dashed var(--card-border);
-      border-radius: 8px;
-      padding: 32px;
-      text-align: center;
-      color: var(--text-muted);
-      font-size: 13px;
-    }
-
-    /* Packet Stream Console */
-    .stream-container {
+    /* Section 3: Sequence of Events Log */
+    .log-box {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 8px;
-      padding: 14px;
-    }
-
-    .stream-console {
+      border-radius: 6px;
+      padding: 12px 14px;
       font-family: var(--mono);
       font-size: 12px;
-      max-height: 240px;
-      overflow-y: auto;
+      min-height: 120px;
       display: flex;
       flex-direction: column;
       gap: 6px;
     }
 
-    .stream-row {
+    .log-row {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       color: var(--text-muted);
-      padding: 2px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
     }
 
-    .stream-time {
+    .log-time {
       color: var(--text-muted);
       flex-shrink: 0;
     }
 
-    .stream-node {
+    .log-node {
       color: var(--bamboo-green);
       font-weight: 600;
       flex-shrink: 0;
     }
 
-    .stream-summary {
-      color: var(--text);
+    .log-text {
+      color: #e2e8f0;
+    }
+
+    .log-text.lock {
+      color: var(--bamboo-green);
+    }
+
+    .log-text.warn {
+      color: var(--amber);
     }
   </style>
 </head>
@@ -239,114 +293,214 @@
     <div class="brand">
       <span class="brand-icon">🎋</span>
       <span class="brand-name">Bamboo Node</span>
-      <span class="brand-tag">GCS MONITOR</span>
+      <span class="brand-tag">GCS</span>
     </div>
-    <div class="header-status">
+    <div class="header-controls">
       <div class="live-indicator">
-        <span class="live-dot"></span>
-        <span id="conn-status">LIVE STREAM</span>
+        <span class="live-dot" id="live-dot"></span>
+        <span id="conn-status">LIVE</span>
       </div>
+      <button class="pause-btn" id="pause-btn" onclick="togglePause()">PAUSE</button>
       <div class="stat-text" id="stat-frames">Frames: 0</div>
       <div class="stat-text" id="stat-rate">0.0 Hz</div>
     </div>
   </header>
 
   <main>
-    <!-- Section 1: Detected Bamboo Nodes -->
+    <!-- Section 1: Active Nodes in The Cupboard -->
     <section>
-      <div class="section-title">Active Swarm Nodes</div>
-      <div class="node-list" id="node-list">
-        <div class="empty-state">Waiting for optical pulse frames...</div>
+      <div class="section-label">Active Swarm Nodes</div>
+      <div class="node-grid" id="node-grid">
+        <div style="color: var(--text-muted); padding: 12px; grid-column: 1/-1;">Waiting for optical frames...</div>
       </div>
     </section>
 
-    <!-- Section 2: Simple Decoded Packet Feed -->
+    <!-- Section 2: Anchored Latest Pulse Inspector -->
     <section>
-      <div class="section-title">Decoded Optical Packets</div>
-      <div class="stream-container">
-        <div class="stream-console" id="stream-console">
-          <div style="color: var(--text-muted);">No packets received yet.</div>
+      <div class="section-label">Latest Decoded Optical Pulse</div>
+      <div class="pulse-box">
+        <div class="pulse-title">WIRE LINK</div>
+        <div class="pulse-data" id="pulse-data">
+          <div>NODE: <span id="pulse-node">--</span></div>
+          <div>SEQ: <span id="pulse-seq">--</span></div>
+          <div>BEARING: <span id="pulse-az">--</span></div>
+          <div>CRC-8: <span id="pulse-crc">--</span></div>
         </div>
+      </div>
+    </section>
+
+    <!-- Section 3: Actionable Sequence of Events -->
+    <section>
+      <div class="section-label">Sequence of Events Log</div>
+      <div class="log-box" id="log-box">
+        <div style="color: var(--text-muted);">Awaiting operational state transitions...</div>
       </div>
     </section>
   </main>
 
   <script>
-    const nodeList = document.getElementById('node-list');
-    const streamConsole = document.getElementById('stream-console');
+    let isPaused = false;
+    const nodeGrid = document.getElementById('node-grid');
+    const logBox = document.getElementById('log-box');
     const statFrames = document.getElementById('stat-frames');
     const statRate = document.getElementById('stat-rate');
     const connStatus = document.getElementById('conn-status');
+    const pauseBtn = document.getElementById('pause-btn');
+
+    const pulseNode = document.getElementById('pulse-node');
+    const pulseSeq = document.getElementById('pulse-seq');
+    const pulseAz = document.getElementById('pulse-az');
+    const pulseCrc = document.getElementById('pulse-crc');
+
+    function togglePause() {
+      isPaused = !isPaused;
+      if (isPaused) {
+        pauseBtn.innerText = 'RESUME';
+        pauseBtn.classList.add('paused');
+      } else {
+        pauseBtn.innerText = 'PAUSE';
+        pauseBtn.classList.remove('paused');
+      }
+    }
 
     function cleanName(str) {
       return (str || '').replace('MODE_', '').replace('LOCK_', '').replace('_', ' ');
     }
 
+    // In-place node elements cache
+    const nodeElements = new Map();
+
+    function updateNodes(activeNodes) {
+      if (!activeNodes || activeNodes.length === 0) {
+        if (nodeElements.size > 0) {
+          nodeGrid.innerHTML = '<div style="color: var(--text-muted); padding: 12px; grid-column: 1/-1;">Waiting for optical frames...</div>';
+          nodeElements.clear();
+        }
+        return;
+      }
+
+      const activeIds = new Set(activeNodes.map(n => n.node_id));
+
+      // Remove evicted nodes
+      for (const [id, el] of nodeElements.entries()) {
+        if (!activeIds.has(id)) {
+          el.remove();
+          nodeElements.delete(id);
+        }
+      }
+
+      // If empty state exists, clear it
+      if (nodeElements.size === 0) {
+        nodeGrid.innerHTML = '';
+      }
+
+      // Update or create nodes in-place
+      activeNodes.forEach(node => {
+        const isLocked = node.lock_status === 'LOCK_HARD_LOCKED';
+        let badgeType = 'badge-green';
+        if (node.mode === 'MODE_SEARCH') badgeType = 'badge-amber';
+        if (node.mode === 'MODE_DISPERSAL') badgeType = 'badge-red';
+
+        const lastSeenSec = ((Date.now() - (node.last_seen_ms || Date.now())) / 1000).toFixed(1);
+
+        if (!nodeElements.has(node.node_id)) {
+          // Create once
+          const card = document.createElement('div');
+          card.className = `node-card ${isLocked ? 'locked' : ''}`;
+          card.id = `node-card-${node.node_id}`;
+          card.innerHTML = `
+            <div class="card-row">
+              <span class="node-title">Bamboo Node #${node.node_id}</span>
+              <span class="badge ${badgeType}" id="badge-${node.node_id}">${cleanName(node.mode)}</span>
+            </div>
+            <div class="field-row">
+              <span class="field-label">Optical Lock</span>
+              <span class="field-val" id="lock-${node.node_id}" style="color: ${isLocked ? 'var(--bamboo-green)' : 'var(--text)'};">${cleanName(node.lock_status)}</span>
+            </div>
+            <div class="field-row">
+              <span class="field-label">Bearing</span>
+              <span class="field-val" id="bearing-${node.node_id}">${node.azimuth_mrad || 0} mrad</span>
+            </div>
+            <div class="field-row">
+              <span class="field-label">Sequence</span>
+              <span class="field-val" id="seq-${node.node_id}">#${node.sequence_num || 0}</span>
+            </div>
+            <div class="field-row">
+              <span class="field-label">Last Seen</span>
+              <span class="field-val" id="seen-${node.node_id}">${lastSeenSec}s ago</span>
+            </div>
+          `;
+          nodeGrid.appendChild(card);
+          nodeElements.set(node.node_id, card);
+        } else {
+          // Update in place without DOM re-layout
+          const card = nodeElements.get(node.node_id);
+          card.className = `node-card ${isLocked ? 'locked' : ''}`;
+          
+          const badge = document.getElementById(`badge-${node.node_id}`);
+          if (badge) {
+            badge.className = `badge ${badgeType}`;
+            badge.innerText = cleanName(node.mode);
+          }
+          const lock = document.getElementById(`lock-${node.node_id}`);
+          if (lock) {
+            lock.style.color = isLocked ? 'var(--bamboo-green)' : 'var(--text)';
+            lock.innerText = cleanName(node.lock_status);
+          }
+          const bearing = document.getElementById(`bearing-${node.node_id}`);
+          if (bearing) bearing.innerText = `${node.azimuth_mrad || 0} mrad`;
+
+          const seq = document.getElementById(`seq-${node.node_id}`);
+          if (seq) seq.innerText = `#${node.sequence_num || 0}`;
+
+          const seen = document.getElementById(`seen-${node.node_id}`);
+          if (seen) seen.innerText = `${lastSeenSec}s ago`;
+        }
+      });
+    }
+
     function render(data) {
+      if (isPaused) return;
+
       // 1. Stats
       if (data.stats) {
         statFrames.innerText = `Frames: ${data.stats.total_frames || 0}`;
         statRate.innerText = `${(data.stats.packet_rate_hz || 0).toFixed(1)} Hz`;
       }
 
-      // 2. Active Nodes
-      if (!data.active_nodes || data.active_nodes.length === 0) {
-        nodeList.innerHTML = '<div class="empty-state">Waiting for optical pulse frames...</div>';
-      } else {
-        nodeList.innerHTML = data.active_nodes.map(node => {
-          const isLocked = node.lock_status === 'LOCK_HARD_LOCKED';
-          let badgeClass = 'node-badge';
-          if (node.mode === 'MODE_SEARCH') badgeClass += ' amber';
-          if (node.mode === 'MODE_DISPERSAL') badgeClass += ' red';
+      // 2. Active Nodes (In-place)
+      updateNodes(data.active_nodes);
 
-          const lastSeenSec = ((Date.now() - (node.last_seen_ms || Date.now())) / 1000).toFixed(1);
+      // 3. Anchored Latest Pulse
+      if (data.latest_pulse) {
+        pulseNode.innerText = `#${data.latest_pulse.node_id}`;
+        pulseSeq.innerText = `#${data.latest_pulse.sequence_num}`;
+        pulseAz.innerText = `${data.latest_pulse.azimuth_mrad} mrad`;
+        pulseCrc.innerText = `0x${(data.latest_pulse.crc8 || 0).toString(16).toUpperCase().padStart(2, '0')} OK`;
+      }
 
+      // 4. Actionable Events Log
+      if (data.events && data.events.length > 0) {
+        logBox.innerHTML = data.events.map(e => {
+          let textClass = 'log-text';
+          if (e.level === 'LOCK') textClass += ' lock';
+          if (e.level === 'WARN') textClass += ' warn';
           return `
-            <div class="node-card ${isLocked ? 'locked' : ''}">
-              <div class="node-top">
-                <span class="node-title">Bamboo Node #${node.node_id}</span>
-                <span class="${badgeClass}">${cleanName(node.mode)}</span>
-              </div>
-              <div class="node-detail">
-                <span class="detail-label">Optical Lock</span>
-                <span class="detail-val" style="color: ${isLocked ? 'var(--bamboo-green)' : 'var(--text)'};">
-                  ${cleanName(node.lock_status)}
-                </span>
-              </div>
-              <div class="node-detail">
-                <span class="detail-label">Azimuth Bearing</span>
-                <span class="detail-val">${node.azimuth_mrad || 0} mrad</span>
-              </div>
-              <div class="node-detail">
-                <span class="detail-label">Packet Sequence</span>
-                <span class="detail-val">#${node.sequence_num || 0} (CRC 0x${(node.crc8 || 0).toString(16).toUpperCase().padStart(2, '0')})</span>
-              </div>
-              <div class="node-detail">
-                <span class="detail-label">Last Seen</span>
-                <span class="detail-val">${lastSeenSec}s ago</span>
-              </div>
+            <div class="log-row">
+              <span class="log-time">${e.time}</span>
+              <span class="log-node">N#${e.node_id}</span>
+              <span class="${textClass}">${e.message}</span>
             </div>
           `;
         }).join('');
       }
-
-      // 3. Simple Packet Stream
-      if (data.recent_packets && data.recent_packets.length > 0) {
-        streamConsole.innerHTML = data.recent_packets.slice(0, 15).map(pkt => `
-          <div class="stream-row">
-            <span class="stream-time">${pkt.time || ''}</span>
-            <span class="stream-node">Node ${pkt.node_id}</span>
-            <span class="stream-summary">${pkt.summary || ''}</span>
-          </div>
-        `).join('');
-      }
     }
 
-    // Connect Server-Sent Events
+    // Connect SSE
     function connect() {
       const evt = new EventSource('/events');
       evt.onopen = () => {
-        connStatus.innerText = 'LIVE STREAM';
+        connStatus.innerText = 'LIVE';
         connStatus.style.color = 'var(--bamboo-green)';
       };
       evt.onmessage = (e) => {
@@ -355,7 +509,7 @@
         } catch (err) {}
       };
       evt.onerror = () => {
-        connStatus.innerText = 'CONNECTING...';
+        connStatus.innerText = 'OFFLINE';
         connStatus.style.color = 'var(--amber)';
       };
     }

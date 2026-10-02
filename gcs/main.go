@@ -39,10 +39,21 @@ type NodeSnapshot struct {
 	LastSeenMs     int64  `json:"last_seen_ms"`
 }
 
-type PacketSummary struct {
+type SwarmEvent struct {
 	Time    string `json:"time"`
 	NodeId  uint32 `json:"node_id"`
-	Summary string `json:"summary"`
+	Level   string `json:"level"` // "INFO", "LOCK", "WARN"
+	Message string `json:"message"`
+}
+
+type LatestPulse struct {
+	Time        string `json:"time"`
+	NodeId      uint32 `json:"node_id"`
+	SequenceNum uint32 `json:"sequence_num"`
+	Mode        string `json:"mode"`
+	LockStatus  string `json:"lock_status"`
+	AzimuthMrad int32  `json:"azimuth_mrad"`
+	Crc8        uint32 `json:"crc8"`
 }
 
 type SwarmStats struct {
@@ -51,27 +62,46 @@ type SwarmStats struct {
 }
 
 type SwarmState struct {
-	ActiveNodes   []NodeSnapshot  `json:"active_nodes"`
-	Stats         SwarmStats      `json:"stats"`
-	RecentPackets []PacketSummary `json:"recent_packets"`
+	ActiveNodes []NodeSnapshot `json:"active_nodes"`
+	Stats       SwarmStats     `json:"stats"`
+	Events      []SwarmEvent   `json:"events"`
+	LatestPulse *LatestPulse   `json:"latest_pulse,omitempty"`
 }
 
 type SwarmMonitor struct {
-	mu            sync.RWMutex
-	nodes         map[uint32]*NodeSnapshot
-	recentPackets []PacketSummary
-	totalFrames   int64
-	lastFrameSec  int64
-	framesInSec   int64
-	currentRate   float64
-	maxPackets    int
+	mu           sync.Mutex
+	nodes        map[uint32]*NodeSnapshot
+	events       []SwarmEvent
+	latestPulse  *LatestPulse
+	totalFrames  int64
+	lastFrameSec int64
+	framesInSec  int64
+	currentRate  float64
+	maxEvents    int
 }
 
 func NewSwarmMonitor() *SwarmMonitor {
 	return &SwarmMonitor{
-		nodes:         make(map[uint32]*NodeSnapshot),
-		recentPackets: make([]PacketSummary, 0, 50),
-		maxPackets:    30,
+		nodes:     make(map[uint32]*NodeSnapshot),
+		events:    make([]SwarmEvent, 0, 20),
+		maxEvents: 8,
+	}
+}
+
+func cleanLabel(s string) string {
+	if len(s) > 5 && s[:5] == "MODE_" {
+		return s[5:]
+	}
+	if len(s) > 5 && s[:5] == "LOCK_" {
+		return s[5:]
+	}
+	return s
+}
+
+func (m *SwarmMonitor) addEventLocked(evt SwarmEvent) {
+	m.events = append([]SwarmEvent{evt}, m.events...)
+	if len(m.events) > m.maxEvents {
+		m.events = m.events[:m.maxEvents]
 	}
 }
 
@@ -112,6 +142,47 @@ func (m *SwarmMonitor) IngestNeuron(n *neuronv1.Neuron) {
 		el = n.Bearing.ElevationMrad
 	}
 
+	timeStr := now.Format("15:04:05")
+
+	prev, exists := m.nodes[n.NodeId]
+	if !exists {
+		m.addEventLocked(SwarmEvent{
+			Time:    timeStr,
+			NodeId:  n.NodeId,
+			Level:   "INFO",
+			Message: "Optical line-of-sight acquired",
+		})
+	} else {
+		if prev.Mode != modeStr {
+			m.addEventLocked(SwarmEvent{
+				Time:    timeStr,
+				NodeId:  n.NodeId,
+				Level:   "INFO",
+				Message: fmt.Sprintf("Operational mode -> %s", cleanLabel(modeStr)),
+			})
+		}
+		if prev.LockStatus != lockStr {
+			lvl := "INFO"
+			if lockStr == "LOCK_HARD_LOCKED" {
+				lvl = "LOCK"
+			}
+			m.addEventLocked(SwarmEvent{
+				Time:    timeStr,
+				NodeId:  n.NodeId,
+				Level:   lvl,
+				Message: fmt.Sprintf("Optical lock -> %s", cleanLabel(lockStr)),
+			})
+		}
+		if !prev.ProximityAlert && prox {
+			m.addEventLocked(SwarmEvent{
+				Time:    timeStr,
+				NodeId:  n.NodeId,
+				Level:   "WARN",
+				Message: "Proximity alert flag active",
+			})
+		}
+	}
+
 	m.nodes[n.NodeId] = &NodeSnapshot{
 		NodeId:         n.NodeId,
 		SequenceNum:    n.SequenceNum,
@@ -126,37 +197,46 @@ func (m *SwarmMonitor) IngestNeuron(n *neuronv1.Neuron) {
 		LastSeenMs:     nowMs,
 	}
 
-	// Add packet summary to ring
-	summary := fmt.Sprintf("SEQ=%d MODE=%s LOCK=%s CRC=0x%02X",
-		n.SequenceNum, modeStr[5:], lockStr[5:], n.Crc8)
-	pkt := PacketSummary{
-		Time:    now.Format("15:04:05.000"),
-		NodeId:  n.NodeId,
-		Summary: summary,
-	}
-
-	m.recentPackets = append([]PacketSummary{pkt}, m.recentPackets...)
-	if len(m.recentPackets) > m.maxPackets {
-		m.recentPackets = m.recentPackets[:m.maxPackets]
+	m.latestPulse = &LatestPulse{
+		Time:        now.Format("15:04:05.000"),
+		NodeId:      n.NodeId,
+		SequenceNum: n.SequenceNum,
+		Mode:        modeStr,
+		LockStatus:  lockStr,
+		AzimuthMrad: az,
+		Crc8:        n.Crc8,
 	}
 }
 
 func (m *SwarmMonitor) Snapshot() SwarmState {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	nowMs := time.Now().UnixMilli()
 	active := make([]NodeSnapshot, 0, len(m.nodes))
 
-	for _, n := range m.nodes {
-		// Evict nodes not seen in > 5000ms
+	for id, n := range m.nodes {
 		if nowMs-n.LastSeenMs < 5000 {
 			active = append(active, *n)
+		} else {
+			delete(m.nodes, id)
+			m.addEventLocked(SwarmEvent{
+				Time:    time.Now().Format("15:04:05"),
+				NodeId:  id,
+				Level:   "WARN",
+				Message: "Optical line-of-sight lost (timeout)",
+			})
 		}
 	}
 
-	recent := make([]PacketSummary, len(m.recentPackets))
-	copy(recent, m.recentPackets)
+	events := make([]SwarmEvent, len(m.events))
+	copy(events, m.events)
+
+	var latest *LatestPulse
+	if m.latestPulse != nil {
+		lpCopy := *m.latestPulse
+		latest = &lpCopy
+	}
 
 	return SwarmState{
 		ActiveNodes: active,
@@ -164,7 +244,8 @@ func (m *SwarmMonitor) Snapshot() SwarmState {
 			TotalFrames:  m.totalFrames,
 			PacketRateHz: m.currentRate,
 		},
-		RecentPackets: recent,
+		Events:      events,
+		LatestPulse: latest,
 	}
 }
 
@@ -209,7 +290,7 @@ func (s *GCSServer) HandleEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	ticker := time.NewTicker(100 * time.Millisecond) // 10 Hz refresh
+	ticker := time.NewTicker(250 * time.Millisecond) // Calm 4 Hz refresh rate
 	defer ticker.Stop()
 
 	for {
@@ -337,7 +418,7 @@ func (s *GCSServer) ListenUDP(ctx context.Context) error {
 // RunDemoEngine generates simulated optical swarm telemetry for testing and demos.
 func (s *GCSServer) RunDemoEngine(ctx context.Context) {
 	fmt.Fprintf(os.Stdout, "level=INFO event=gcs_demo_engine_active status=simulating_optical_swarm\n")
-	ticker := time.NewTicker(50 * time.Millisecond) // 20 Hz frame rate
+	ticker := time.NewTicker(100 * time.Millisecond) // Calm 10 Hz frame rate
 	defer ticker.Stop()
 
 	var seq uint32 = 0
@@ -349,10 +430,10 @@ func (s *GCSServer) RunDemoEngine(ctx context.Context) {
 			return
 		case <-ticker.C:
 			seq++
-			t += 0.05
+			t += 0.1
 			nowUs := uint64(time.Now().UnixMicro())
 
-			// Node 1: Emitter at boresight formation lock
+			// Node 1: Primary Emitter at boresight (Formation Lock)
 			s.monitor.IngestNeuron(&neuronv1.Neuron{
 				NodeId:      1,
 				SequenceNum: seq,
@@ -364,14 +445,14 @@ func (s *GCSServer) RunDemoEngine(ctx context.Context) {
 					SwapCritical:   false,
 				},
 				Bearing: &neuronv1.OpticalBearing{
-					AzimuthMrad:   int32(math.Sin(t*0.5) * 40.0),
-					ElevationMrad: 15,
+					AzimuthMrad:   int32(math.Sin(t*0.2) * 25.0),
+					ElevationMrad: 10,
 				},
 				Crc8:        0xF8,
 				TimestampUs: nowUs,
 			})
 
-			// Node 2: Wingman node
+			// Node 2: Wingman (Formation Lock)
 			s.monitor.IngestNeuron(&neuronv1.Neuron{
 				NodeId:      2,
 				SequenceNum: seq,
@@ -383,29 +464,10 @@ func (s *GCSServer) RunDemoEngine(ctx context.Context) {
 					SwapCritical:   false,
 				},
 				Bearing: &neuronv1.OpticalBearing{
-					AzimuthMrad:   220 + int32(math.Cos(t*0.3)*25.0),
-					ElevationMrad: -10,
+					AzimuthMrad:   180 + int32(math.Cos(t*0.1)*15.0),
+					ElevationMrad: -5,
 				},
 				Crc8:        0x8C,
-				TimestampUs: nowUs,
-			})
-
-			// Node 3: Search node sweeping across field of view
-			s.monitor.IngestNeuron(&neuronv1.Neuron{
-				NodeId:      3,
-				SequenceNum: seq,
-				State: &neuronv1.DiscreteStateVector{
-					Mode:           neuronv1.OperationalMode_MODE_SEARCH,
-					LockStatus:     neuronv1.OpticalLockStatus_LOCK_ACQUIRING,
-					ConsensusAck:   false,
-					ProximityAlert: false,
-					SwapCritical:   false,
-				},
-				Bearing: &neuronv1.OpticalBearing{
-					AzimuthMrad:   int32(math.Sin(t*0.8) * 280.0),
-					ElevationMrad: int32(math.Cos(t*0.6) * 80.0),
-				},
-				Crc8:        0xD8,
 				TimestampUs: nowUs,
 			})
 		}
@@ -454,7 +516,13 @@ func main() {
 
 	fmt.Fprintf(os.Stdout, "level=INFO event=gcs_started http_addr=%s listen_addr=%s demo=%v\n",
 		*httpAddr, *listenAddr, *demo)
-	fmt.Fprintf(os.Stdout, "level=INFO event=gcs_ready dashboard_url=http://localhost%s\n", *httpAddr)
+	displayAddr := *httpAddr
+	if host, port, err := net.SplitHostPort(*httpAddr); err == nil {
+		if host == "" || host == "0.0.0.0" {
+			displayAddr = "127.0.0.1:" + port
+		}
+	}
+	fmt.Fprintf(os.Stdout, "level=INFO event=gcs_ready dashboard_url=http://%s\n", displayAddr)
 
 	if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		fmt.Fprintf(os.Stderr, "level=ERROR event=gcs_http_failed err=%v\n", err)
