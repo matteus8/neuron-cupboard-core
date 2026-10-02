@@ -128,13 +128,35 @@
       gap: 20px;
     }
 
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
     .section-label {
       font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 1px;
       color: var(--text-muted);
-      margin-bottom: 8px;
+    }
+
+    .filter-indicator {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: color 0.15s ease;
+    }
+
+    .filter-indicator.active {
+      color: var(--bamboo-green);
+    }
+
+    .filter-indicator.active:hover {
+      text-decoration: underline;
     }
 
     /* Section 1: Anchored Swarm Cards */
@@ -152,10 +174,38 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+      position: relative;
+    }
+
+    .node-card:hover {
+      border-color: var(--card-border-active);
+      background: #162019;
     }
 
     .node-card.locked {
-      border-color: rgba(52, 211, 153, 0.4);
+      border-left: 3px solid rgba(52, 211, 153, 0.7);
+    }
+
+    .node-card.selected {
+      border-color: var(--bamboo-green) !important;
+      background: #18241c !important;
+      box-shadow: 0 0 0 1px var(--bamboo-green), 0 3px 12px var(--bamboo-green-glow);
+    }
+
+    .selected-tag {
+      font-size: 9px;
+      font-family: var(--mono);
+      font-weight: 700;
+      color: var(--bamboo-green);
+      background: var(--bamboo-green-glow);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+      padding: 1px 5px;
+      border-radius: 3px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
     }
 
     .card-row {
@@ -309,7 +359,10 @@
   <main>
     <!-- Section 1: Active Nodes in The Cupboard -->
     <section>
-      <div class="section-label">Active Swarm Nodes</div>
+      <div class="section-header">
+        <div class="section-label">Active Swarm Nodes</div>
+        <div class="filter-indicator" id="node-filter-status" onclick="clearSelection()">All Nodes (Click card to filter)</div>
+      </div>
       <div class="node-grid" id="node-grid">
         <div style="color: var(--text-muted); padding: 12px; grid-column: 1/-1;">Waiting for optical frames...</div>
       </div>
@@ -317,9 +370,11 @@
 
     <!-- Section 2: Anchored Latest Pulse Inspector -->
     <section>
-      <div class="section-label">Latest Decoded Optical Pulse</div>
+      <div class="section-header">
+        <div class="section-label">Latest Decoded Optical Pulse</div>
+      </div>
       <div class="pulse-box">
-        <div class="pulse-title">WIRE LINK</div>
+        <div class="pulse-title" id="pulse-title">WIRE LINK</div>
         <div class="pulse-data" id="pulse-data">
           <div>NODE: <span id="pulse-node">--</span></div>
           <div>SEQ: <span id="pulse-seq">--</span></div>
@@ -331,7 +386,10 @@
 
     <!-- Section 3: Actionable Sequence of Events -->
     <section>
-      <div class="section-label">Sequence of Events Log</div>
+      <div class="section-header">
+        <div class="section-label">Sequence of Events Log</div>
+        <div class="filter-indicator" id="log-filter-tag">All Nodes</div>
+      </div>
       <div class="log-box" id="log-box">
         <div style="color: var(--text-muted);">Awaiting operational state transitions...</div>
       </div>
@@ -340,12 +398,19 @@
 
   <script>
     let isPaused = false;
+    let selectedNodeId = null;
+    let lastData = null;
+
     const nodeGrid = document.getElementById('node-grid');
     const logBox = document.getElementById('log-box');
     const statFrames = document.getElementById('stat-frames');
     const statRate = document.getElementById('stat-rate');
     const connStatus = document.getElementById('conn-status');
     const pauseBtn = document.getElementById('pause-btn');
+
+    const nodeFilterStatus = document.getElementById('node-filter-status');
+    const pulseTitle = document.getElementById('pulse-title');
+    const logFilterTag = document.getElementById('log-filter-tag');
 
     const pulseNode = document.getElementById('pulse-node');
     const pulseSeq = document.getElementById('pulse-seq');
@@ -360,6 +425,26 @@
       } else {
         pauseBtn.innerText = 'PAUSE';
         pauseBtn.classList.remove('paused');
+      }
+    }
+
+    function selectNode(id) {
+      if (selectedNodeId === id) {
+        selectedNodeId = null;
+      } else {
+        selectedNodeId = id;
+      }
+      if (lastData) {
+        render(lastData);
+      }
+    }
+
+    function clearSelection() {
+      if (selectedNodeId !== null) {
+        selectedNodeId = null;
+        if (lastData) {
+          render(lastData);
+        }
       }
     }
 
@@ -386,6 +471,9 @@
         if (!activeIds.has(id)) {
           el.remove();
           nodeElements.delete(id);
+          if (selectedNodeId === id) {
+            selectedNodeId = null;
+          }
         }
       }
 
@@ -397,6 +485,7 @@
       // Update or create nodes in-place
       activeNodes.forEach(node => {
         const isLocked = node.lock_status === 'LOCK_HARD_LOCKED';
+        const isSelected = selectedNodeId === node.node_id;
         let badgeType = 'badge-green';
         if (node.mode === 'MODE_SEARCH') badgeType = 'badge-amber';
         if (node.mode === 'MODE_DISPERSAL') badgeType = 'badge-red';
@@ -406,11 +495,15 @@
         if (!nodeElements.has(node.node_id)) {
           // Create once
           const card = document.createElement('div');
-          card.className = `node-card ${isLocked ? 'locked' : ''}`;
+          card.className = `node-card ${isLocked ? 'locked' : ''} ${isSelected ? 'selected' : ''}`;
           card.id = `node-card-${node.node_id}`;
+          card.onclick = () => selectNode(node.node_id);
           card.innerHTML = `
             <div class="card-row">
-              <span class="node-title">Bamboo Node #${node.node_id}</span>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="node-title">Bamboo Node #${node.node_id}</span>
+                <span class="selected-tag" id="sel-tag-${node.node_id}" style="display: ${isSelected ? 'inline-block' : 'none'};">ACTIVE</span>
+              </div>
               <span class="badge ${badgeType}" id="badge-${node.node_id}">${cleanName(node.mode)}</span>
             </div>
             <div class="field-row">
@@ -435,8 +528,12 @@
         } else {
           // Update in place without DOM re-layout
           const card = nodeElements.get(node.node_id);
-          card.className = `node-card ${isLocked ? 'locked' : ''}`;
+          card.className = `node-card ${isLocked ? 'locked' : ''} ${isSelected ? 'selected' : ''}`;
           
+          const selTag = document.getElementById(`sel-tag-${node.node_id}`);
+          if (selTag) {
+            selTag.style.display = isSelected ? 'inline-block' : 'none';
+          }
           const badge = document.getElementById(`badge-${node.node_id}`);
           if (badge) {
             badge.className = `badge ${badgeType}`;
@@ -468,20 +565,62 @@
         statRate.innerText = `${(data.stats.packet_rate_hz || 0).toFixed(1)} Hz`;
       }
 
+      // Filter status header labels
+      if (selectedNodeId !== null) {
+        nodeFilterStatus.innerText = `Filtered: Node #${selectedNodeId} (Click to reset)`;
+        nodeFilterStatus.classList.add('active');
+        pulseTitle.innerText = `WIRE LINK (NODE #${selectedNodeId})`;
+        logFilterTag.innerText = `Filtered: Node #${selectedNodeId}`;
+        logFilterTag.classList.add('active');
+      } else {
+        nodeFilterStatus.innerText = 'All Nodes (Click card to filter)';
+        nodeFilterStatus.classList.remove('active');
+        pulseTitle.innerText = 'WIRE LINK (LATEST)';
+        logFilterTag.innerText = 'All Nodes';
+        logFilterTag.classList.remove('active');
+      }
+
       // 2. Active Nodes (In-place)
       updateNodes(data.active_nodes);
 
-      // 3. Anchored Latest Pulse
-      if (data.latest_pulse) {
-        pulseNode.innerText = `#${data.latest_pulse.node_id}`;
-        pulseSeq.innerText = `#${data.latest_pulse.sequence_num}`;
-        pulseAz.innerText = `${data.latest_pulse.azimuth_mrad} mrad`;
-        pulseCrc.innerText = `0x${(data.latest_pulse.crc8 || 0).toString(16).toUpperCase().padStart(2, '0')} OK`;
+      // 3. Anchored Latest Pulse (scoped to selected node if filtered)
+      let pulse = null;
+      if (selectedNodeId !== null) {
+        const found = (data.active_nodes || []).find(n => n.node_id === selectedNodeId);
+        if (found) {
+          pulse = {
+            node_id: found.node_id,
+            sequence_num: found.sequence_num,
+            azimuth_mrad: found.azimuth_mrad,
+            crc8: found.crc8
+          };
+        } else if (data.latest_pulse && data.latest_pulse.node_id === selectedNodeId) {
+          pulse = data.latest_pulse;
+        }
+      } else {
+        pulse = data.latest_pulse;
       }
 
-      // 4. Actionable Events Log
-      if (data.events && data.events.length > 0) {
-        logBox.innerHTML = data.events.map(e => {
+      if (pulse) {
+        pulseNode.innerText = `#${pulse.node_id}`;
+        pulseSeq.innerText = `#${pulse.sequence_num}`;
+        pulseAz.innerText = `${pulse.azimuth_mrad || 0} mrad`;
+        pulseCrc.innerText = `0x${(pulse.crc8 || 0).toString(16).toUpperCase().padStart(2, '0')} OK`;
+      } else {
+        pulseNode.innerText = '--';
+        pulseSeq.innerText = '--';
+        pulseAz.innerText = '--';
+        pulseCrc.innerText = '--';
+      }
+
+      // 4. Actionable Events Log (filtered to selected node if active)
+      let eventsToDisplay = data.events || [];
+      if (selectedNodeId !== null) {
+        eventsToDisplay = eventsToDisplay.filter(e => e.node_id === selectedNodeId);
+      }
+
+      if (eventsToDisplay.length > 0) {
+        logBox.innerHTML = eventsToDisplay.map(e => {
           let textClass = 'log-text';
           if (e.level === 'LOCK') textClass += ' lock';
           if (e.level === 'WARN') textClass += ' warn';
@@ -493,6 +632,8 @@
             </div>
           `;
         }).join('');
+      } else {
+        logBox.innerHTML = `<div style="color: var(--text-muted);">No events recorded${selectedNodeId !== null ? ' for Node #' + selectedNodeId : ''}.</div>`;
       }
     }
 
@@ -505,7 +646,8 @@
       };
       evt.onmessage = (e) => {
         try {
-          render(JSON.parse(e.data));
+          lastData = JSON.parse(e.data);
+          render(lastData);
         } catch (err) {}
       };
       evt.onerror = () => {
