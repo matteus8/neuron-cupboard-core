@@ -15,6 +15,16 @@ echo "================================================================="
 echo "   NEURON CUPBOARD: PANDA RUNTIME EDGE INSTALLER (PI 5)"
 echo "================================================================="
 
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+    echo "Usage: sudo ./install.sh"
+    echo ""
+    echo "Installs Panda Vision Runtime, Protocol Buffers, and bench tools to /opt/neuron-cupboard."
+    echo "Registers and enables panda-runtime.service. Auto-detects and installs gateway if colocated."
+    echo ""
+    echo "Bench diagnostics tool: python3 /opt/neuron-cupboard/scripts/bench_tool.py --help"
+    exit 0
+fi
+
 if [[ $EUID -ne 0 ]]; then
    echo "[!] Error: This script must be run as root (use sudo ./install.sh)" >&2
    exit 1
