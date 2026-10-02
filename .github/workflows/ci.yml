@@ -80,6 +80,13 @@ jobs:
           go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.12
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
+      - name: Install ARM Embedded Toolchain & Raspberry Pi Pico SDK
+        run: |
+          sudo apt-get install -y -qq gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib cmake
+          git clone --depth 1 --branch 2.1.1 https://github.com/raspberrypi/pico-sdk.git /opt/pico-sdk
+          git -C /opt/pico-sdk submodule update --init --depth 1 lib/tinyusb
+          echo "PICO_SDK_PATH=/opt/pico-sdk" >> $GITHUB_ENV
+
       - name: Verify Code Generation
         run: |
           make proto
@@ -97,6 +104,14 @@ jobs:
         run: |
           make build
           ls -lh bin/gateway
+          ls -lh bin/bamboo_node.uf2
+
+      - name: Archive Firmware Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bamboo-node-firmware
+          path: bin/bamboo_node.uf2
+          if-no-files-found: error
 
   release:
     name: Tag & Release Standalone Native Binaries
@@ -112,7 +127,15 @@ jobs:
         with:
           go-version: 'stable'
 
-      - name: Build Cross-Platform Standalone Binaries
+      - name: Install ARM Embedded Toolchain & Raspberry Pi Pico SDK
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib cmake
+          git clone --depth 1 --branch 2.1.1 https://github.com/raspberrypi/pico-sdk.git /opt/pico-sdk
+          git -C /opt/pico-sdk submodule update --init --depth 1 lib/tinyusb
+          echo "PICO_SDK_PATH=/opt/pico-sdk" >> $GITHUB_ENV
+
+      - name: Build Cross-Platform Standalone Binaries & Firmware
         run: |
           make release-build
 
@@ -120,6 +143,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
+            bin/bamboo_node.uf2
             bin/gateway-linux-arm64
             bin/gateway-linux-amd64
             bin/gateway-darwin-arm64

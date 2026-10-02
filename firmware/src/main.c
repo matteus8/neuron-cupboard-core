@@ -13,7 +13,7 @@
 #include "../include/manchester.h"
 #include "../../proto/c/neuron_wire.h"
 
-#ifdef PICO_BOARD
+#if defined(PICO_BOARD) || defined(PICO_ON_DEVICE)
 #include "pico/stdlib.h"
 #include "hardware/timer.h"
 #include "hardware/gpio.h"
@@ -41,7 +41,7 @@ static void pico_delay_us(uint32_t us) {
 #define BEACON_INTERVAL_MS    100   /* 10 Hz state beacon transmission */
 
 int main(void) {
-#ifdef PICO_BOARD
+#if defined(PICO_BOARD) || defined(PICO_ON_DEVICE)
     stdio_init_all();
     gpio_init(BAMBOO_TX_PIN);
     gpio_set_dir(BAMBOO_TX_PIN, GPIO_OUT);
@@ -73,7 +73,7 @@ int main(void) {
         /* Transmit optical pulse train with microsecond precision */
         manchester_tx_transmit_blocking(&tx, pico_gpio_write, pico_delay_us);
 
-#ifdef PICO_BOARD
+#if defined(PICO_BOARD) || defined(PICO_ON_DEVICE)
         sleep_ms(BEACON_INTERVAL_MS);
 #else
         printf("level=INFO event=bamboo_node_sim_complete node_id=%d seq_num=%d crc8=0x%02X chips_emitted=%d\n",
