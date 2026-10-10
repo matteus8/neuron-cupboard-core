@@ -104,10 +104,12 @@ jobs:
         run: |
           make build
           make package-runtime
+          make package-runtime-airgap
           ls -lh bin/gateway
           ls -lh bin/gcs
           ls -lh bin/bamboo_node.uf2
           ls -lh bin/panda-runtime.tar.gz
+          ls -lh bin/panda-runtime-airgap.tar.gz
 
       - name: Archive Firmware & Runtime Artifacts
         uses: actions/upload-artifact@v7.0.1
@@ -116,6 +118,7 @@ jobs:
           path: |
             bin/bamboo_node.uf2
             bin/panda-runtime.tar.gz
+            bin/panda-runtime-airgap.tar.gz
           if-no-files-found: error
 
   release:
@@ -150,6 +153,7 @@ jobs:
           files: |
             bin/bamboo_node.uf2
             bin/panda-runtime.tar.gz
+            bin/panda-runtime-airgap.tar.gz
             bin/gateway-linux-arm64
             bin/gateway-linux-amd64
             bin/gateway-darwin-arm64
@@ -163,7 +167,7 @@ jobs:
             | Hardware Role | Physical Hardware | Release Artifacts to Deploy | Description & Execution |
             | :--- | :--- | :--- | :--- |
             | **Optical Emitter Node** | **Raspberry Pi Pico H** (RP2040 MCU) | **`bamboo_node.uf2`** | **Transmitter Firmware:** Hold `BOOTSEL` button while connecting Pico via USB (`RPI-RP2` drive). Drag & drop `bamboo_node.uf2`. Microcontroller auto-reboots and emits 850nm Manchester pulses on GP15. |
-            | **Optical Receiver & Gateway Node** | **Raspberry Pi 5** (Raspberry Pi OS Lite 64-bit) | **`panda-runtime.tar.gz`**<br>+<br>**`gateway-linux-arm64`** | **Runs Both Services On-Device:**<br>1. `panda-runtime`: Ingests Camera Module 3 NoIR frames, tracks 850nm light blobs with OpenCV, and decodes Manchester pulses into 6-byte frames.<br>2. `gateway-linux-arm64`: Translates decoded frames into Protobuf and relays across Zenoh over IP.<br>*Running `sudo ./install.sh` with both files in the same folder auto-configures both systemd services.* |
+            | **Optical Receiver & Gateway Node** | **Raspberry Pi 5** (Raspberry Pi OS Lite 64-bit) | **`panda-runtime.tar.gz`**<br>*(or `panda-runtime-airgap.tar.gz`)*<br>+<br>**`gateway-linux-arm64`** | **Runs Both Services On-Device:**<br>1. `panda-runtime`: Ingests Camera Module 3 NoIR frames, tracks 850nm light blobs with OpenCV, and decodes Manchester pulses into 6-byte frames.<br>2. `gateway-linux-arm64`: Translates decoded frames into Protobuf and relays across Zenoh over IP.<br>*Running `sudo ./install.sh` (or `sudo ./install.sh --airgap` in DDIL environments) auto-configures both systemd services.* |
             | **Ground Control Station (GCS) / C2** | **Surface Pro 3 / PC / Mac** (Ubuntu / macOS) | **`gcs-linux-amd64`**<br>*(or `darwin-arm64` / `linux-arm64`)* | **Tactical Web Dashboard:** Real-time Head-Up Display (HUD) displaying optical bearing radar, swarm consensus, and live wire stream on `http://localhost:8080`. |
             | **Tactical Network Gateway** | **Workstations / Servers** (Linux / macOS) | **`gateway-linux-amd64`**<br>*(or `darwin-arm64`)* | **Tactical Workstation Relay:** Ingests swarm state vectors on ground stations, command post laptops, or C2 servers. |
 
