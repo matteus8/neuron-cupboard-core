@@ -49,8 +49,18 @@ In adherence to the Neuron Cupboard SWaP (Size, Weight, and Power) engineering c
   - `bamboo_node.uf2`: Bare-metal optical transmitter firmware for the Raspberry Pi Pico H (RP2040 MCU) with cycle-accurate PIO Manchester modulation.
   - `gateway-linux-arm64`: Targeted for Raspberry Pi 5 / ARM Cortex-A76 edge nodes.
   - `gateway-linux-amd64`: Targeted for tactical x86_64 edge workstations and Zenoh routers.
-  - `gateway-darwin-arm64`: Targeted for local flight telemetry and simulation on macOS.
+  - `panda-runtime.tar.gz`: Lightweight edge runtime bundle for Raspberry Pi 5.
+  - `panda-runtime-airgap.tar.gz`: DDIL / air-gapped installation package with bundled asset directories (`wheels/` and `debs/`) and `--airgap` flag support to operate without internet access.
   - `checksums.sha256`: Cryptographic SHA-256 verification manifest.
+
+### 4. DDIL & Air-Gapped Field Deployment
+In disconnected, denied, intermittent, or limited-bandwidth (DDIL) environments where nodes cannot reach external package repositories:
+* The installer provides `--airgap` / `--offline` flags:
+  ```bash
+  sudo ./install.sh --airgap
+  ```
+* Dependencies are pre-verified against local Python and system caches before touching the network.
+* Offline wheels in `./wheels/` and Debian packages in `./debs/` are auto-detected and installed locally (`pip --no-index --find-links` and `dpkg -i`).
 
 ### Triggering a Release
 To publish an official release, push a signed semantic version tag:
