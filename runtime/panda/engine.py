@@ -108,8 +108,101 @@ class PandaRuntime:
             except OSError as err:
                 sys.stderr.write(f"level=WARN event=udp_forward_failed err={err}\n")
 
+    def run(
+        self,
+        camera_device: int = 0,
+        target_fps: float = 30.0,
+        simulate: bool = False,
+        max_frames: Optional[int] = None,
+    ):
+        """Continuous execution loop evaluating optical sensor frames.
+
+        Enforces deterministic, non-blocking timeouts and structured logging.
+        Handles SIGINT and SIGTERM gracefully.
+        """
+        import signal
+        from .camera import OpticalCamera
+
+        self.running = True
+
+        def _handle_signal(signum, frame):
+            sys.stdout.write(f"level=INFO event=panda_runtime_shutdown_requested sig={signum}\n")
+            sys.stdout.flush()
+            self.running = False
+
+        # Register signal handlers if running in main thread
+        try:
+            signal.signal(signal.SIGINT, _handle_signal)
+            signal.signal(signal.SIGTERM, _handle_signal)
+        except (ValueError, AttributeError):
+            pass
+
+        cam = OpticalCamera(
+            device_id=camera_device,
+            width=self.intrinsics.width,
+            height=self.intrinsics.height,
+            simulate=simulate,
+        )
+
+        frame_interval = 1.0 / max(1.0, target_fps)
+        sys.stdout.write(
+            f"level=INFO event=panda_runtime_loop_active device={camera_device} "
+            f"fps={target_fps} simulate={cam.simulate}\n"
+        )
+        sys.stdout.flush()
+
+        try:
+            while self.running:
+                loop_start = time.time()
+                frame = cam.grab_frame()
+
+                if frame:
+                    self.process_optical_frame(
+                        frame.data,
+                        timestamp_us=frame.timestamp_us,
+                        width=frame.width,
+                        height=frame.height,
+                    )
+                else:
+                    time.sleep(0.002)
+
+                if max_frames is not None and self.frames_processed >= max_frames:
+                    break
+
+                elapsed = time.time() - loop_start
+                sleep_time = frame_interval - elapsed
+                if sleep_time > 0.001:
+                    time.sleep(sleep_time)
+        finally:
+            self.running = False
+            cam.close()
+            if self.udp_sock:
+                self.udp_sock.close()
+                self.udp_sock = None
+            sys.stdout.write(
+                f"level=INFO event=panda_runtime_stopped frames_processed={self.frames_processed} "
+                f"active_nodes={len(self.cupboard.nodes)}\n"
+            )
+            sys.stdout.flush()
+
 
 if __name__ == "__main__":
-    print("level=INFO event=panda_runtime_init engine=PandaRuntime mode=headless")
-    runtime = PandaRuntime()
+    import os
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Neuron Cupboard: Panda Edge Runtime Engine")
+    parser.add_argument("--device", type=int, default=int(os.getenv("NEURON_CAMERA_DEVICE", "0")), help="Camera device index")
+    parser.add_argument("--gateway-ip", type=str, default=os.getenv("NEURON_GATEWAY_IP", None), help="Tactical gateway IP for UDP forwarding")
+    parser.add_argument("--gateway-port", type=int, default=int(os.getenv("NEURON_GATEWAY_PORT", "9090")), help="Tactical gateway UDP port")
+    parser.add_argument("--fps", type=float, default=float(os.getenv("NEURON_TARGET_FPS", "30.0")), help="Target optical evaluation FPS")
+    parser.add_argument("--simulate", action="store_true", default=os.getenv("NEURON_SIMULATE", "0") in ("1", "true", "True"), help="Force synthetic optical simulation")
+    parser.add_argument("--once", action="store_true", help="Process single self-test frame and exit")
+    args = parser.parse_args()
+
+    gw_addr = (args.gateway_ip, args.gateway_port) if args.gateway_ip else None
+    print(f"level=INFO event=panda_runtime_init engine=PandaRuntime mode=headless gw={gw_addr}")
+    runtime = PandaRuntime(gateway_udp_addr=gw_addr)
     print("level=INFO event=panda_runtime_ready status=listening_optical_front_end")
+
+    max_f = 1 if args.once else None
+    runtime.run(camera_device=args.device, target_fps=args.fps, simulate=args.simulate, max_frames=max_f)
