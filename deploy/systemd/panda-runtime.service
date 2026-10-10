@@ -8,8 +8,8 @@ Wants=neuron-gateway.service
 Type=simple
 User=neuron
 Group=neuron
-WorkingDirectory=/opt/neuron-cupboard/runtime
-ExecStart=/usr/bin/python3 -m panda.engine
+WorkingDirectory=/opt/neuron-cupboard
+ExecStart=/usr/bin/python3 -m runtime.panda.engine
 Restart=always
 RestartSec=2s
 
