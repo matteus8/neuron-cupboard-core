@@ -28,7 +28,7 @@ class MockPin:
 
 
 class BambooTransmitter:
-    def __init__(self, gpio_pin=15, baud_rate=1000):
+    def __init__(self, gpio_pin=15, baud_rate=15):
         self.baud_rate = baud_rate
         self.half_bit_us = int(1_000_000 / (2 * baud_rate))
         self.seq_num = 0
@@ -70,7 +70,7 @@ class BambooTransmitter:
 
 
 if __name__ == "__main__":
-    tx = BambooTransmitter(gpio_pin=15, baud_rate=1000)
+    tx = BambooTransmitter(gpio_pin=15, baud_rate=15)
     state = nw.pack_state(
         nw.MODE_FORMATION_LOCK,
         nw.LOCK_HARD_LOCKED,
