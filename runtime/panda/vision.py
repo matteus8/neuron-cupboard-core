@@ -7,6 +7,7 @@ contour centroid / bearing calculation without heavy neural nets.
 """
 
 from typing import List, Tuple, Optional, NamedTuple
+from collections import deque
 import math
 
 # Try importing OpenCV for hardware-accelerated edge execution; provide fallback if absent
@@ -140,19 +141,34 @@ class OpticalTracker:
         if not bright_pixels:
             return []
 
-        # Cluster bright pixels by spatial proximity
+        # Cluster bright pixels by connected components (8-connectivity)
+        pixel_map = {(x, y): val for x, y, val in bright_pixels}
+        visited = set()
         clusters: List[List[Tuple[int, int, int]]] = []
+
         for p in bright_pixels:
-            px, py, _ = p
-            assigned = False
-            for c in clusters:
-                cx0, cy0, _ = c[0]
-                if abs(px - cx0) <= 6 and abs(py - cy0) <= 6:
-                    c.append(p)
-                    assigned = True
-                    break
-            if not assigned:
-                clusters.append([p])
+            pt = (p[0], p[1])
+            if pt in visited:
+                continue
+
+            cluster = []
+            queue = deque([pt])
+            visited.add(pt)
+
+            while queue:
+                curr_x, curr_y = queue.popleft()
+                cluster.append((curr_x, curr_y, pixel_map[(curr_x, curr_y)]))
+
+                for dx in (-1, 0, 1):
+                    for dy in (-1, 0, 1):
+                        if dx == 0 and dy == 0:
+                            continue
+                        neighbor = (curr_x + dx, curr_y + dy)
+                        if neighbor in pixel_map and neighbor not in visited:
+                            visited.add(neighbor)
+                            queue.append(neighbor)
+
+            clusters.append(cluster)
 
         centroids: List[OpticalCentroid] = []
         for cluster in clusters:

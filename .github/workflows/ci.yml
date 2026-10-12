@@ -77,6 +77,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq protobuf-compiler clang
+          python3 -m pip install -q -r runtime/requirements.txt
           go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.12
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 

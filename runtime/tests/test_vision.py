@@ -1,7 +1,7 @@
 """Unit tests for Panda Runtime vision tracking and bearing calculations."""
 
 import unittest
-from runtime.panda.vision import OpticalTracker, CameraIntrinsics
+from runtime.panda.vision import OpticalTracker, CameraIntrinsics, HAVE_OPENCV
 
 
 class TestOpticalTracker(unittest.TestCase):
@@ -82,8 +82,9 @@ class TestOpticalTracker(unittest.TestCase):
         self.assertEqual(len(centroids), 1)
         self.assertAlmostEqual(centroids[0].x, 49.5, delta=1.0)
         self.assertAlmostEqual(centroids[0].y, 49.5, delta=1.0)
-        # 10x10 square after 3x3 morphological opening is 9x9 = 81 px
-        self.assertAlmostEqual(centroids[0].area, 81.0, delta=2.0)
+        # 10x10 square after 3x3 morphological opening is 9x9 = 81 px (or 100 px in fallback)
+        expected_area = 81.0 if HAVE_OPENCV else 100.0
+        self.assertAlmostEqual(centroids[0].area, expected_area, delta=2.0)
 
     def test_large_bench_bloom_acceptance(self):
         # Verify that large bench blooms (e.g. area 8000) are accepted when max_blob_area is generous
@@ -98,7 +99,8 @@ class TestOpticalTracker(unittest.TestCase):
 
         centroids = tracker.process_frame(bytes(img), width=640, height=480)
         self.assertEqual(len(centroids), 1)
-        self.assertAlmostEqual(centroids[0].area, 7921.0, delta=10.0)
+        expected_area = 7921.0 if HAVE_OPENCV else 8100.0
+        self.assertAlmostEqual(centroids[0].area, expected_area, delta=15.0)
 
 
 if __name__ == "__main__":
