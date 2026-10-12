@@ -102,7 +102,7 @@ def render_ascii_frame(frame: CameraFrame, centroids: List[OpticalCentroid], gri
     return "\n".join(lines)
 
 
-def run_camera_align(device_id: int, iterations: int = 50, synthetic: bool = False, min_area: float = 8.0, max_area: float = 2000.0, threshold: int = 175):
+def run_camera_align(device_id: int, iterations: int = 50, synthetic: bool = False, min_area: float = 3.0, max_area: float = 2000.0, threshold: int = 175):
     """Interactive optical alignment tool for lens focusing and 850nm filter testing."""
     print("=" * 60)
     print("   850nm OPTICAL FRONT-END ALIGNMENT & LENS FOCUS TOOL")
@@ -155,7 +155,7 @@ def run_camera_align(device_id: int, iterations: int = 50, synthetic: bool = Fal
     print("\nAlignment session closed.")
 
 
-def run_rx_decoder(device_id: int, duration_sec: int = 10, synthetic: bool = False, min_area: float = 8.0, max_area: float = 2000.0, threshold: int = 175):
+def run_rx_decoder(device_id: int, duration_sec: int = 10, synthetic: bool = False, min_area: float = 3.0, max_area: float = 2000.0, threshold: int = 175):
     """Live optical pulse train decoder with spatial division tracking."""
     print("=" * 60)
     print("   LIVE OPTICAL RECEIVER & SPATIAL PULSE DECODER")
@@ -263,7 +263,7 @@ def main():
     parser.add_argument("--device", type=int, default=0, help="Camera device index (/dev/videoN)")
     parser.add_argument("--duration", type=int, default=10, help="Execution duration in seconds")
     parser.add_argument("--threshold", type=int, default=175, help="Luminance threshold (0-255, default 175)")
-    parser.add_argument("--min-area", type=float, default=8.0, help="Minimum blob area in px (default 8.0)")
+    parser.add_argument("--min-area", type=float, default=3.0, help="Minimum blob area in px (default 3.0)")
     parser.add_argument("--max-area", type=float, default=2000.0, help="Maximum blob area in px (default 2000.0)")
     parser.add_argument("--iterations", type=int, default=50, help="Frames for camera-align (0 for continuous, default 50)")
     parser.add_argument("--synthetic", action="store_true", help="Force synthetic optical simulation")

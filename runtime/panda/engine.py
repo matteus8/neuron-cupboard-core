@@ -23,7 +23,7 @@ class PandaRuntime:
         self,
         intrinsics: Optional[CameraIntrinsics] = None,
         luminance_threshold: int = 175,
-        min_blob_area: float = 8.0,
+        min_blob_area: float = 3.0,
         max_blob_area: float = 2000.0,
         node_timeout_us: int = 1_000_000,
         on_packet_callback: Optional[Callable[[nw.WireFrame, OpticalCentroid], None]] = None,
@@ -202,7 +202,7 @@ if __name__ == "__main__":
     parser.add_argument("--gateway-ip", type=str, default=os.getenv("NEURON_GATEWAY_IP", None), help="Tactical gateway IP for UDP forwarding")
     parser.add_argument("--gateway-port", type=int, default=int(os.getenv("NEURON_GATEWAY_PORT", "9092")), help="Tactical gateway UDP port")
     parser.add_argument("--threshold", type=int, default=int(os.getenv("NEURON_LUMINANCE_THRESHOLD", "175")), help="Luminance threshold (0-255, default 175)")
-    parser.add_argument("--min-area", type=float, default=float(os.getenv("NEURON_MIN_BLOB_AREA", "8.0")), help="Minimum blob area in px (default 8.0)")
+    parser.add_argument("--min-area", type=float, default=float(os.getenv("NEURON_MIN_BLOB_AREA", "3.0")), help="Minimum blob area in px (default 3.0)")
     parser.add_argument("--max-area", type=float, default=float(os.getenv("NEURON_MAX_BLOB_AREA", "2000.0")), help="Maximum blob area in px (default 2000.0)")
     parser.add_argument("--fps", type=float, default=float(os.getenv("NEURON_TARGET_FPS", "30.0")), help="Target optical evaluation FPS")
     parser.add_argument("--simulate", action="store_true", default=os.getenv("NEURON_SIMULATE", "0") in ("1", "true", "True"), help="Force synthetic optical simulation")

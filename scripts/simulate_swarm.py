@@ -83,8 +83,8 @@ def run_swarm_simulation():
         c3_lit = (node3_chips[chip_idx] == 1)
 
         active_emitters = [
-            (100.0, 120.0, 4.0, 245.0, c2_lit),
-            (220.0, 120.0, 4.0, 245.0, c3_lit),
+            (100.0, 120.0, 5.0, 245.0, c2_lit),
+            (220.0, 120.0, 5.0, 245.0, c3_lit),
         ]
 
         frame = cam.grab_frame(active_emitters=active_emitters)

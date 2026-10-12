@@ -53,7 +53,7 @@ class OpticalTracker:
         self,
         intrinsics: CameraIntrinsics,
         luminance_threshold: int = 175,
-        min_blob_area: float = 8.0,
+        min_blob_area: float = 3.0,
         max_blob_area: float = 2000.0,
         aperture: str = "fore",
     ):
