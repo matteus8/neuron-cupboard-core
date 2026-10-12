@@ -21,6 +21,11 @@ int main(void) {
     assert(tx.half_bit_us == 500);
     printf("CHECK: Half-bit delay calculated to %u us [OK]\n", tx.half_bit_us);
 
+    manchester_tx_t tx_cam;
+    manchester_tx_init(&tx_cam, 15, MANCHESTER_CAMERA_BAUD_RATE, MANCHESTER_POLARITY_IEEE8023);
+    assert(tx_cam.half_bit_us == 33333);
+    printf("CHECK: Camera half-bit delay (15 Baud) calculated to %u us [OK]\n", tx_cam.half_bit_us);
+
     /* Test single byte encoding */
     uint8_t test_byte = 0xAA; /* 10101010b */
     uint16_t chips = manchester_encode_bytes(&tx, &test_byte, 1);

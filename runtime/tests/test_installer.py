@@ -13,8 +13,9 @@ class TestDeployInstallers(unittest.TestCase):
     """Verify deployment scripts, airgap options, and bash syntax."""
 
     def test_installer_syntax(self):
-        """Validate bash syntax for runtime and gateway installers."""
-        for script in [INSTALL_SCRIPT, GATEWAY_SCRIPT]:
+        """Validate bash syntax for runtime, gateway, and runner scripts."""
+        runner_script = os.path.join(REPO_ROOT, "scripts", "run_runtime.sh")
+        for script in [INSTALL_SCRIPT, GATEWAY_SCRIPT, runner_script]:
             res = subprocess.run(
                 ["bash", "-n", script],
                 capture_output=True,
@@ -23,7 +24,7 @@ class TestDeployInstallers(unittest.TestCase):
             self.assertEqual(res.returncode, 0, f"Syntax error in {script}: {res.stderr}")
 
     def test_runtime_installer_help_flag(self):
-        """Verify --help flag exits cleanly and displays airgap/offline options."""
+        """Verify --help flag exits cleanly and displays airgap/gateway options."""
         res = subprocess.run(
             ["bash", INSTALL_SCRIPT, "--help"],
             capture_output=True,
@@ -33,6 +34,8 @@ class TestDeployInstallers(unittest.TestCase):
         self.assertIn("--offline", res.stdout)
         self.assertIn("--airgap", res.stdout)
         self.assertIn("--skip-deps", res.stdout)
+        self.assertIn("--gateway-ip", res.stdout)
+        self.assertIn("--gateway-port", res.stdout)
 
     def test_runtime_installer_non_root_guard(self):
         """Verify non-root execution cleanly exits with error code 1."""

@@ -102,19 +102,24 @@ def render_ascii_frame(frame: CameraFrame, centroids: List[OpticalCentroid], gri
     return "\n".join(lines)
 
 
-def run_camera_align(device_id: int, iterations: int = 50, synthetic: bool = False):
+def run_camera_align(device_id: int, iterations: int = 50, synthetic: bool = False, max_area: float = 25000.0, threshold: int = 180):
     """Interactive optical alignment tool for lens focusing and 850nm filter testing."""
     print("=" * 60)
     print("   850nm OPTICAL FRONT-END ALIGNMENT & LENS FOCUS TOOL")
     print("   Aim 850nm emitter at lens. Adjust focus until [*] appears.")
+    print(f"   Config: threshold={threshold}, max_blob_area={max_area:.0f}px")
     print("=" * 60)
 
     cam = OpticalCamera(device_id=device_id, width=640, height=480, simulate=synthetic)
     intrinsics = CameraIntrinsics(fx=450.0, fy=450.0, cx=320.0, cy=240.0, width=640, height=480)
-    tracker = OpticalTracker(intrinsics, luminance_threshold=180)
+    tracker = OpticalTracker(intrinsics, luminance_threshold=threshold, max_blob_area=max_area)
+
+    total_frames = iterations if iterations > 0 else 1_000_000
+    frame_count = 0
 
     try:
-        for i in range(iterations):
+        while frame_count < total_frames:
+            frame_count += 1
             # In synthetic mode, simulate an emitter at center
             emitters = [(320, 240, 6, 245, True)] if cam.simulate else None
             frame = cam.grab_frame(emitters)
@@ -126,8 +131,9 @@ def run_camera_align(device_id: int, iterations: int = 50, synthetic: bool = Fal
             ascii_grid = render_ascii_frame(frame, centroids)
 
             # Clear screen and render
+            iter_label = f"Frame {frame_count}/{iterations}" if iterations > 0 else f"Frame {frame_count} (Press Ctrl+C to exit)"
             sys.stdout.write("\033[H\033[J")
-            sys.stdout.write(f"NEURON CUPBOARD: OPTICAL ALIGNMENT (Frame {i+1}/{iterations})\n")
+            sys.stdout.write(f"NEURON CUPBOARD: OPTICAL ALIGNMENT ({iter_label})\n")
             sys.stdout.write(ascii_grid + "\n")
 
             if centroids:
@@ -142,21 +148,24 @@ def run_camera_align(device_id: int, iterations: int = 50, synthetic: bool = Fal
 
             sys.stdout.flush()
             time.sleep(0.1)
+    except KeyboardInterrupt:
+        pass
     finally:
         cam.close()
     print("\nAlignment session closed.")
 
 
-def run_rx_decoder(device_id: int, duration_sec: int = 10, synthetic: bool = False):
+def run_rx_decoder(device_id: int, duration_sec: int = 10, synthetic: bool = False, max_area: float = 25000.0, threshold: int = 180):
     """Live optical pulse train decoder with spatial division tracking."""
     print("=" * 60)
     print("   LIVE OPTICAL RECEIVER & SPATIAL PULSE DECODER")
     print("   Listening for 850nm Manchester modulated beacons...")
+    print(f"   Config: threshold={threshold}, max_blob_area={max_area:.0f}px")
     print("=" * 60)
 
     cam = OpticalCamera(device_id=device_id, width=640, height=480, simulate=synthetic)
     intrinsics = CameraIntrinsics(fx=450.0, fy=450.0, cx=320.0, cy=240.0, width=640, height=480)
-    tracker = OpticalTracker(intrinsics, luminance_threshold=180)
+    tracker = OpticalTracker(intrinsics, luminance_threshold=threshold, max_blob_area=max_area)
     pulse_tracker = SpatialPulseTracker(max_association_distance_px=30.0)
 
     # For synthetic demonstration, prepare a 96-chip frame from Node 7
@@ -215,15 +224,30 @@ def main():
     )
     parser.add_argument("--device", type=int, default=0, help="Camera device index (/dev/videoN)")
     parser.add_argument("--duration", type=int, default=10, help="Execution duration in seconds")
+    parser.add_argument("--threshold", type=int, default=180, help="Luminance threshold (0-255, default 180)")
+    parser.add_argument("--max-area", type=float, default=25000.0, help="Maximum blob area in px (default 25000.0)")
+    parser.add_argument("--iterations", type=int, default=50, help="Frames for camera-align (0 for continuous, default 50)")
     parser.add_argument("--synthetic", action="store_true", help="Force synthetic optical simulation")
     args = parser.parse_args()
 
     if args.mode == "scan":
         scan_devices()
     elif args.mode == "camera-align":
-        run_camera_align(device_id=args.device, iterations=20, synthetic=args.synthetic)
+        run_camera_align(
+            device_id=args.device,
+            iterations=args.iterations,
+            synthetic=args.synthetic,
+            max_area=args.max_area,
+            threshold=args.threshold,
+        )
     elif args.mode == "rx-decode":
-        run_rx_decoder(device_id=args.device, duration_sec=args.duration, synthetic=args.synthetic)
+        run_rx_decoder(
+            device_id=args.device,
+            duration_sec=args.duration,
+            synthetic=args.synthetic,
+            max_area=args.max_area,
+            threshold=args.threshold,
+        )
 
 
 if __name__ == "__main__":

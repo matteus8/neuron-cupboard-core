@@ -20,6 +20,7 @@ extern "C" {
 
 /* Default physical optical configuration */
 #define MANCHESTER_DEFAULT_BAUD_RATE   (1000)                   /* 1000 symbols/sec */
+#define MANCHESTER_CAMERA_BAUD_RATE    (15)                     /* 15 symbols/sec (~30 FPS optical camera sync) */
 #define MANCHESTER_HALF_BIT_US         (500)                    /* 500 microseconds per half-bit */
 #define MANCHESTER_FRAME_MAX_BITS      (NEURON_WIRE_FRAME_LEN * 8) /* 48 bits */
 #define MANCHESTER_MAX_CHIPS           (MANCHESTER_FRAME_MAX_BITS * 2) /* 96 half-bit chips */
@@ -40,7 +41,7 @@ typedef enum {
  */
 typedef struct {
     uint8_t tx_pin;                           /* Hardware GPIO pin connected to 850nm IR LED FET driver */
-    uint16_t half_bit_us;                     /* Half-bit pulse duration in microseconds */
+    uint32_t half_bit_us;                    /* Half-bit pulse duration in microseconds */
     manchester_polarity_t polarity;           /* Encoding polarity convention */
     uint8_t chip_buffer[MANCHESTER_MAX_CHIPS];/* Pre-encoded half-bit chip sequence */
     uint16_t chip_count;                      /* Total half-bits to transmit */

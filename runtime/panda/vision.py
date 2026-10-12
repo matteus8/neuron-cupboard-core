@@ -53,7 +53,7 @@ class OpticalTracker:
         intrinsics: CameraIntrinsics,
         luminance_threshold: int = 180,
         min_blob_area: float = 2.0,
-        max_blob_area: float = 2500.0,
+        max_blob_area: float = 25000.0,
         aperture: str = "fore",
     ):
         self.intrinsics = intrinsics
@@ -64,10 +64,16 @@ class OpticalTracker:
 
     def process_frame(self, frame_data, width: int = 0, height: int = 0) -> List[OpticalCentroid]:
         """Detect bright 850nm optical blobs and calculate spatial bearings."""
-        if HAVE_OPENCV and hasattr(frame_data, "shape"):
-            return self._process_opencv(frame_data)
-        else:
-            return self._process_fallback(frame_data, width or self.intrinsics.width, height or self.intrinsics.height)
+        if HAVE_OPENCV:
+            if hasattr(frame_data, "shape"):
+                return self._process_opencv(frame_data)
+            elif isinstance(frame_data, (bytes, bytearray)):
+                w = width or self.intrinsics.width
+                h = height or self.intrinsics.height
+                if len(frame_data) >= w * h:
+                    arr = np.frombuffer(frame_data[:w * h], dtype=np.uint8).reshape((h, w))
+                    return self._process_opencv(arr)
+        return self._process_fallback(frame_data, width or self.intrinsics.width, height or self.intrinsics.height)
 
     def _process_opencv(self, frame) -> List[OpticalCentroid]:
         """Hardware-accelerated OpenCV luminance and contour centroiding."""
