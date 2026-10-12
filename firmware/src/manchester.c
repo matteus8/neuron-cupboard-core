@@ -12,7 +12,7 @@ void manchester_tx_init(manchester_tx_t *tx, uint8_t gpio_pin, uint16_t baud_rat
     tx->polarity = polarity;
     if (baud_rate == 0) baud_rate = MANCHESTER_DEFAULT_BAUD_RATE;
     /* Half-bit time = 1,000,000 / (2 * baud_rate) */
-    tx->half_bit_us = (uint16_t)(1000000UL / (2UL * baud_rate));
+    tx->half_bit_us = (uint32_t)(1000000UL / (2UL * baud_rate));
     tx->chip_count = 0;
     tx->current_chip = 0;
     tx->is_transmitting = false;

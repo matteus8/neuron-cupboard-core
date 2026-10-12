@@ -1,7 +1,7 @@
 """Unit tests for Panda Runtime vision tracking and bearing calculations."""
 
 import unittest
-from runtime.panda.vision import OpticalTracker, CameraIntrinsics
+from runtime.panda.vision import OpticalTracker, CameraIntrinsics, HAVE_OPENCV
 
 
 class TestOpticalTracker(unittest.TestCase):
@@ -68,6 +68,39 @@ class TestOpticalTracker(unittest.TestCase):
         xs = sorted([c.x for c in centroids])
         self.assertAlmostEqual(xs[0], 25.0, places=1)
         self.assertAlmostEqual(xs[1], 75.0, places=1)
+
+    def test_bytes_buffer_opencv_pipeline(self):
+        # Verify that raw bytes frame converts cleanly to OpenCV ndarray
+        img = bytearray(100 * 100)
+        for y in range(45, 55):
+            for x in range(45, 55):
+                img[y * 100 + x] = 255
+        raw_bytes = bytes(img)
+
+        tracker = OpticalTracker(self.intrinsics, luminance_threshold=180, max_blob_area=500.0)
+        centroids = tracker.process_frame(raw_bytes, width=100, height=100)
+        self.assertEqual(len(centroids), 1)
+        self.assertAlmostEqual(centroids[0].x, 49.5, delta=1.0)
+        self.assertAlmostEqual(centroids[0].y, 49.5, delta=1.0)
+        # 10x10 square after 3x3 morphological opening is 9x9 = 81 px (or 100 px in fallback)
+        expected_area = 81.0 if HAVE_OPENCV else 100.0
+        self.assertAlmostEqual(centroids[0].area, expected_area, delta=2.0)
+
+    def test_large_bench_bloom_acceptance(self):
+        # Verify that large bench blooms (e.g. area 8000) are accepted when max_blob_area is generous
+        large_intrinsics = CameraIntrinsics(fx=450.0, fy=450.0, cx=320.0, cy=240.0, width=640, height=480)
+        tracker = OpticalTracker(large_intrinsics, luminance_threshold=180, max_blob_area=25000.0)
+
+        # 90x90 block = 8100 px bloom (89x89 = 7921 after opening)
+        img = bytearray(640 * 480)
+        for y in range(200, 290):
+            for x in range(280, 370):
+                img[y * 640 + x] = 250
+
+        centroids = tracker.process_frame(bytes(img), width=640, height=480)
+        self.assertEqual(len(centroids), 1)
+        expected_area = 7921.0 if HAVE_OPENCV else 8100.0
+        self.assertAlmostEqual(centroids[0].area, expected_area, delta=15.0)
 
 
 if __name__ == "__main__":

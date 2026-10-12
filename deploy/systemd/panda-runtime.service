@@ -9,7 +9,7 @@ Type=simple
 User=neuron
 Group=neuron
 WorkingDirectory=/opt/neuron-cupboard
-ExecStart=/usr/bin/python3 -m runtime.panda.engine
+ExecStart=/opt/neuron-cupboard/scripts/run_runtime.sh
 Restart=always
 RestartSec=2s
 

@@ -38,7 +38,7 @@ static void pico_delay_us(uint32_t us) {
 
 #define BAMBOO_TX_PIN         15    /* GPIO 15 driving IR LED FET */
 #define BAMBOO_NODE_ID        1     /* Default Bamboo Node ID */
-#define BEACON_INTERVAL_MS    100   /* 10 Hz state beacon transmission */
+#define BEACON_INTERVAL_MS    500   /* Periodic state beacon inter-frame spacing */
 
 int main(void) {
 #if defined(PICO_BOARD) || defined(PICO_ON_DEVICE)
@@ -49,7 +49,7 @@ int main(void) {
 #endif
 
     manchester_tx_t tx;
-    manchester_tx_init(&tx, BAMBOO_TX_PIN, 1000, MANCHESTER_POLARITY_IEEE8023);
+    manchester_tx_init(&tx, BAMBOO_TX_PIN, MANCHESTER_CAMERA_BAUD_RATE, MANCHESTER_POLARITY_IEEE8023);
 
     uint8_t seq_num = 0;
     neuron_wire_frame_t frame;

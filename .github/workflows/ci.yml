@@ -77,6 +77,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq protobuf-compiler clang
+          python3 -m pip install -q -r runtime/requirements.txt
           go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.12
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
@@ -157,9 +158,11 @@ jobs:
             bin/gateway-linux-arm64
             bin/gateway-linux-amd64
             bin/gateway-darwin-arm64
+            bin/gateway-windows-amd64.exe
             bin/gcs-linux-arm64
             bin/gcs-linux-amd64
             bin/gcs-darwin-arm64
+            bin/gcs-windows-amd64.exe
             bin/checksums.sha256
           body: |
             ### Target Payloads & Hardware Roles
@@ -167,15 +170,18 @@ jobs:
             | Hardware Role | Physical Hardware | Release Artifacts to Deploy | Description & Execution |
             | :--- | :--- | :--- | :--- |
             | **Optical Emitter Node** | **Raspberry Pi Pico H** (RP2040 MCU) | **`bamboo_node.uf2`** | **Transmitter Firmware:** Hold `BOOTSEL` button while connecting Pico via USB (`RPI-RP2` drive). Drag & drop `bamboo_node.uf2`. Microcontroller auto-reboots and emits 850nm Manchester pulses on GP15. |
-            | **Optical Receiver & Gateway Node** | **Raspberry Pi 5** (Raspberry Pi OS Lite 64-bit) | **`panda-runtime.tar.gz`**<br>*(or `panda-runtime-airgap.tar.gz`)*<br>+<br>**`gateway-linux-arm64`** | **Runs Both Services On-Device:**<br>1. `panda-runtime`: Ingests Camera Module 3 NoIR frames, tracks 850nm light blobs with OpenCV, and decodes Manchester pulses into 6-byte frames.<br>2. `gateway-linux-arm64`: Translates decoded frames into Protobuf and relays across Zenoh over IP.<br>*Running `sudo ./install.sh` (or `sudo ./install.sh --airgap` in DDIL environments) auto-configures both systemd services.* |
-            | **Ground Control Station (GCS) / C2** | **Surface Pro 3 / PC / Mac** (Ubuntu / macOS) | **`gcs-linux-amd64`**<br>*(or `darwin-arm64` / `linux-arm64`)* | **Tactical Web Dashboard:** Real-time Head-Up Display (HUD) displaying optical bearing radar, swarm consensus, and live wire stream on `http://localhost:8080`. |
-            | **Tactical Network Gateway** | **Workstations / Servers** (Linux / macOS) | **`gateway-linux-amd64`**<br>*(or `darwin-arm64`)* | **Tactical Workstation Relay:** Ingests swarm state vectors on ground stations, command post laptops, or C2 servers. |
+            | **Optical Receiver & Gateway Node** | **Raspberry Pi 5** (Raspberry Pi OS Lite 64-bit) | **`panda-runtime.tar.gz`**<br>*(or `panda-runtime-airgap.tar.gz`)*<br>+<br>**`gateway-linux-arm64`** | **Runs Both Services On-Device:**<br>1. `panda-runtime`: Ingests Camera Module 3 NoIR frames, tracks 850nm light blobs with OpenCV, and decodes Manchester pulses into 6-byte frames.<br>2. `gateway-linux-arm64`: Translates decoded frames into Protobuf and relays across Zenoh over IP.<br>*Running `sudo ./install.sh --gateway-ip <IP> --gateway-port <PORT>` auto-configures and starts the systemd service.* |
+            | **Ground Control Station (GCS) / C2** | **Surface Pro 3 / PC / Mac** (Windows / Linux / macOS) | **`gcs-windows-amd64.exe`** (Windows)<br>**`gcs-linux-amd64`** (Linux)<br>**`gcs-darwin-arm64`** (macOS) | **Tactical Web Dashboard:** Real-time Head-Up Display (HUD) displaying optical bearing radar, swarm consensus, and live wire stream on `http://localhost:8080`. |
+            | **Tactical Network Gateway** | **Workstations / Servers** (Windows / Linux / macOS) | **`gateway-windows-amd64.exe`**<br>**`gateway-linux-amd64`**<br>**`gateway-darwin-arm64`** | **Tactical Workstation Relay:** Ingests swarm state vectors on ground stations, command post laptops, or C2 servers. |
 
             ### Quick Deployment Guide
 
-            * **Raspberry Pi 5 Dual-Role Setup:** The Pi 5 is the primary edge receiver node. It runs the computer vision engine (`panda-runtime`) to decode the photons, and the tactical bridge (`gateway`) to broadcast state vectors over the local network / Wi-Fi via Zenoh.
+            * **Raspberry Pi 5 Zero-Touch Setup:** The Pi 5 is the primary edge receiver node. Extract `panda-runtime.tar.gz` and run `sudo ./install.sh --gateway-ip <LAPTOP_IP> --gateway-port 9092`. It installs dependencies (including `libcamera-tools`), configures systemd, and starts the runtime automatically.
             * **Operating System for Raspberry Pi 5:** Use **Raspberry Pi OS Lite (64-bit, Debian Bookworm)**. The headless Lite edition eliminates desktop bloat and provides kernel-level drivers for the RP1 southbridge, VideoCore ISP, and Camera Module 3 NoIR (`libcamera`).
-            * **Tactical GCS on Laptop (Surface Pro 3):** Download `gcs-linux-amd64`, run `chmod +x gcs-linux-amd64`, and execute `./gcs-linux-amd64` (or `./gcs-linux-amd64 --demo` for simulated swarm telemetry). Open `http://localhost:8080` in any browser.
+            * **Tactical GCS on Laptop (Surface / PC / Mac):**
+              - **Windows:** Download `gcs-windows-amd64.exe` and execute `.\gcs-windows-amd64.exe --listen 0.0.0.0:9092 --http 0.0.0.0:8080` (or `.\gcs-windows-amd64.exe --demo` for simulated telemetry).
+              - **Linux/macOS:** Download `gcs-linux-amd64`, run `chmod +x gcs-linux-amd64`, and execute `./gcs-linux-amd64 --listen 0.0.0.0:9092 --http 0.0.0.0:8080`.
+              - Open `http://localhost:8080` in any web browser.
             * **CLI Flags & Help:** Pass `--help` to any binary or installer script (`./gateway-<platform> --help`, `./gcs-<platform> --help`, or `sudo ./install.sh --help`) to view port bindings, metrics endpoints, and options.
             * **Integrity Verification:** Check downloaded files with `sha256sum --ignore-missing -c checksums.sha256`.
           generate_release_notes: false

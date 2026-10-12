@@ -104,7 +104,7 @@ package-runtime:
 	@cp deploy/systemd/neuron-gateway.service /tmp/panda-pkg/
 	@cp deploy/install_runtime.sh /tmp/panda-pkg/install.sh
 	@cp deploy/install_gateway.sh /tmp/panda-pkg/install_gateway.sh
-	@chmod +x /tmp/panda-pkg/install.sh /tmp/panda-pkg/install_gateway.sh /tmp/panda-pkg/scripts/*.py
+	@chmod +x /tmp/panda-pkg/install.sh /tmp/panda-pkg/install_gateway.sh /tmp/panda-pkg/scripts/*.py /tmp/panda-pkg/scripts/*.sh
 	@tar -czf bin/panda-runtime.tar.gz -C /tmp/panda-pkg .
 	@rm -rf /tmp/panda-pkg
 	@echo "  [OK] bin/panda-runtime.tar.gz created"
@@ -124,7 +124,7 @@ package-runtime-airgap:
 	@cp deploy/install_gateway.sh /tmp/panda-airgap-pkg/install_gateway.sh
 	@echo "# Place offline *.whl files in this directory for air-gapped DDIL deployments" > /tmp/panda-airgap-pkg/wheels/README.txt
 	@echo "# Place offline *.deb files in this directory for air-gapped DDIL deployments" > /tmp/panda-airgap-pkg/debs/README.txt
-	@chmod +x /tmp/panda-airgap-pkg/install.sh /tmp/panda-airgap-pkg/install_gateway.sh /tmp/panda-airgap-pkg/scripts/*.py
+	@chmod +x /tmp/panda-airgap-pkg/install.sh /tmp/panda-airgap-pkg/install_gateway.sh /tmp/panda-airgap-pkg/scripts/*.py /tmp/panda-airgap-pkg/scripts/*.sh
 	@tar -czf bin/panda-runtime-airgap.tar.gz -C /tmp/panda-airgap-pkg .
 	@rm -rf /tmp/panda-airgap-pkg
 	@echo "  [OK] bin/panda-runtime-airgap.tar.gz created"
@@ -135,9 +135,11 @@ release-build: build-firmware package-runtime package-runtime-airgap
 	@cd gateway && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o ../bin/gateway-linux-arm64 .
 	@cd gateway && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o ../bin/gateway-linux-amd64 .
 	@cd gateway && CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o ../bin/gateway-darwin-arm64 .
+	@cd gateway && CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o ../bin/gateway-windows-amd64.exe .
 	@cd gcs && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o ../bin/gcs-linux-arm64 .
 	@cd gcs && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o ../bin/gcs-linux-amd64 .
 	@cd gcs && CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o ../bin/gcs-darwin-arm64 .
+	@cd gcs && CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o ../bin/gcs-windows-amd64.exe .
 	@cd bin && if command -v sha256sum >/dev/null 2>&1; then \
 		sha256sum gateway-* gcs-* $$(ls bamboo_node.uf2 panda-runtime.tar.gz panda-runtime-airgap.tar.gz 2>/dev/null || true) > checksums.sha256; \
 	else \
