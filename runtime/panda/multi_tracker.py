@@ -109,7 +109,8 @@ class SpatialPulseTracker:
                 # Prune oldest unbound track to avoid unbounded memory growth under optical glint storm
                 unbound = [t for t in self.tracks.values() if t.bound_node_id is None]
                 if unbound:
-                    oldest = max(unbound, key=lambda t: t.frames_since_match)
+                    # Prioritize pruning transient tracks with 0 accumulated bits before tracks with active bitstreams
+                    oldest = max(unbound, key=lambda t: (len(t.decoder.bit_stream) == 0, t.frames_since_match))
                     del self.tracks[oldest.track_id]
                 else:
                     # System at verified capacity, ignore surplus glint

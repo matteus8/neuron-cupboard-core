@@ -102,17 +102,17 @@ def render_ascii_frame(frame: CameraFrame, centroids: List[OpticalCentroid], gri
     return "\n".join(lines)
 
 
-def run_camera_align(device_id: int, iterations: int = 50, synthetic: bool = False, max_area: float = 25000.0, threshold: int = 140):
+def run_camera_align(device_id: int, iterations: int = 50, synthetic: bool = False, min_area: float = 15.0, max_area: float = 25000.0, threshold: int = 160):
     """Interactive optical alignment tool for lens focusing and 850nm filter testing."""
     print("=" * 60)
     print("   850nm OPTICAL FRONT-END ALIGNMENT & LENS FOCUS TOOL")
     print("   Aim 850nm emitter at lens. Adjust focus until [*] appears.")
-    print(f"   Config: threshold={threshold}, max_blob_area={max_area:.0f}px")
+    print(f"   Config: threshold={threshold}, min_blob_area={min_area:.0f}px, max_blob_area={max_area:.0f}px")
     print("=" * 60)
 
     cam = OpticalCamera(device_id=device_id, width=640, height=480, simulate=synthetic)
     intrinsics = CameraIntrinsics(fx=450.0, fy=450.0, cx=320.0, cy=240.0, width=640, height=480)
-    tracker = OpticalTracker(intrinsics, luminance_threshold=threshold, max_blob_area=max_area)
+    tracker = OpticalTracker(intrinsics, luminance_threshold=threshold, min_blob_area=min_area, max_blob_area=max_area)
 
     total_frames = iterations if iterations > 0 else 1_000_000
     frame_count = 0
@@ -155,17 +155,17 @@ def run_camera_align(device_id: int, iterations: int = 50, synthetic: bool = Fal
     print("\nAlignment session closed.")
 
 
-def run_rx_decoder(device_id: int, duration_sec: int = 10, synthetic: bool = False, max_area: float = 25000.0, threshold: int = 140):
+def run_rx_decoder(device_id: int, duration_sec: int = 10, synthetic: bool = False, min_area: float = 15.0, max_area: float = 25000.0, threshold: int = 160):
     """Live optical pulse train decoder with spatial division tracking."""
     print("=" * 60)
     print("   LIVE OPTICAL RECEIVER & SPATIAL PULSE DECODER")
     print("   Listening for 850nm Manchester modulated beacons...")
-    print(f"   Config: threshold={threshold}, max_blob_area={max_area:.0f}px")
+    print(f"   Config: threshold={threshold}, min_blob_area={min_area:.0f}px, max_blob_area={max_area:.0f}px")
     print("=" * 60)
 
     cam = OpticalCamera(device_id=device_id, width=640, height=480, simulate=synthetic)
     intrinsics = CameraIntrinsics(fx=450.0, fy=450.0, cx=320.0, cy=240.0, width=640, height=480)
-    tracker = OpticalTracker(intrinsics, luminance_threshold=threshold, max_blob_area=max_area)
+    tracker = OpticalTracker(intrinsics, luminance_threshold=threshold, min_blob_area=min_area, max_blob_area=max_area)
     pulse_tracker = SpatialPulseTracker(max_association_distance_px=30.0)
 
     # For synthetic demonstration, prepare a 96-chip frame from Node 7
@@ -199,7 +199,8 @@ def run_rx_decoder(device_id: int, duration_sec: int = 10, synthetic: bool = Fal
             # Live diagnostic feedback on every frame
             if not cam.simulate:
                 if centroids:
-                    c = centroids[0]
+                    # Select largest centroid (primary emitter) for HUD readout
+                    c = max(centroids, key=lambda b: b.area)
                     blob_str = f"BLOB #{len(centroids)} | I={c.intensity:.0f}/255 A={c.area:.0f}px"
                     pulse = "●"
                 else:
@@ -238,7 +239,8 @@ def main():
     )
     parser.add_argument("--device", type=int, default=0, help="Camera device index (/dev/videoN)")
     parser.add_argument("--duration", type=int, default=10, help="Execution duration in seconds")
-    parser.add_argument("--threshold", type=int, default=140, help="Luminance threshold (0-255, default 140)")
+    parser.add_argument("--threshold", type=int, default=160, help="Luminance threshold (0-255, default 160)")
+    parser.add_argument("--min-area", type=float, default=15.0, help="Minimum blob area in px (default 15.0)")
     parser.add_argument("--max-area", type=float, default=25000.0, help="Maximum blob area in px (default 25000.0)")
     parser.add_argument("--iterations", type=int, default=50, help="Frames for camera-align (0 for continuous, default 50)")
     parser.add_argument("--synthetic", action="store_true", help="Force synthetic optical simulation")
@@ -251,6 +253,7 @@ def main():
             device_id=args.device,
             iterations=args.iterations,
             synthetic=args.synthetic,
+            min_area=args.min_area,
             max_area=args.max_area,
             threshold=args.threshold,
         )
@@ -259,6 +262,7 @@ def main():
             device_id=args.device,
             duration_sec=args.duration,
             synthetic=args.synthetic,
+            min_area=args.min_area,
             max_area=args.max_area,
             threshold=args.threshold,
         )

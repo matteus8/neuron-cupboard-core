@@ -52,8 +52,8 @@ class OpticalTracker:
     def __init__(
         self,
         intrinsics: CameraIntrinsics,
-        luminance_threshold: int = 180,
-        min_blob_area: float = 2.0,
+        luminance_threshold: int = 160,
+        min_blob_area: float = 15.0,
         max_blob_area: float = 25000.0,
         aperture: str = "fore",
     ):

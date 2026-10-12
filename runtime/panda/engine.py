@@ -22,7 +22,8 @@ class PandaRuntime:
     def __init__(
         self,
         intrinsics: Optional[CameraIntrinsics] = None,
-        luminance_threshold: int = 140,
+        luminance_threshold: int = 160,
+        min_blob_area: float = 15.0,
         node_timeout_us: int = 1_000_000,
         on_packet_callback: Optional[Callable[[nw.WireFrame, OpticalCentroid], None]] = None,
         gateway_udp_addr: Optional[Tuple[str, int]] = None,
@@ -32,7 +33,7 @@ class PandaRuntime:
             intrinsics = CameraIntrinsics(fx=600.0, fy=600.0, cx=320.0, cy=240.0, width=640, height=480)
 
         self.intrinsics = intrinsics
-        self.tracker = OpticalTracker(intrinsics, luminance_threshold=luminance_threshold)
+        self.tracker = OpticalTracker(intrinsics, luminance_threshold=luminance_threshold, min_blob_area=min_blob_area)
         self.multi_tracker = SpatialPulseTracker(max_association_distance_px=35.0, max_coast_frames=120, polarity=0)
         self.cupboard = TheCupboard(node_timeout_us=node_timeout_us)
         self.on_packet_callback = on_packet_callback
@@ -194,15 +195,16 @@ if __name__ == "__main__":
     parser.add_argument("--device", type=int, default=int(os.getenv("NEURON_CAMERA_DEVICE", "0")), help="Camera device index")
     parser.add_argument("--gateway-ip", type=str, default=os.getenv("NEURON_GATEWAY_IP", None), help="Tactical gateway IP for UDP forwarding")
     parser.add_argument("--gateway-port", type=int, default=int(os.getenv("NEURON_GATEWAY_PORT", "9090")), help="Tactical gateway UDP port")
-    parser.add_argument("--threshold", type=int, default=int(os.getenv("NEURON_LUMINANCE_THRESHOLD", "140")), help="Luminance threshold (0-255, default 140)")
+    parser.add_argument("--threshold", type=int, default=int(os.getenv("NEURON_LUMINANCE_THRESHOLD", "160")), help="Luminance threshold (0-255, default 160)")
+    parser.add_argument("--min-area", type=float, default=float(os.getenv("NEURON_MIN_BLOB_AREA", "15.0")), help="Minimum blob area in px (default 15.0)")
     parser.add_argument("--fps", type=float, default=float(os.getenv("NEURON_TARGET_FPS", "30.0")), help="Target optical evaluation FPS")
     parser.add_argument("--simulate", action="store_true", default=os.getenv("NEURON_SIMULATE", "0") in ("1", "true", "True"), help="Force synthetic optical simulation")
     parser.add_argument("--once", action="store_true", help="Process single self-test frame and exit")
     args = parser.parse_args()
 
     gw_addr = (args.gateway_ip, args.gateway_port) if args.gateway_ip else None
-    print(f"level=INFO event=panda_runtime_init engine=PandaRuntime mode=headless gw={gw_addr} threshold={args.threshold}")
-    runtime = PandaRuntime(gateway_udp_addr=gw_addr, luminance_threshold=args.threshold)
+    print(f"level=INFO event=panda_runtime_init engine=PandaRuntime mode=headless gw={gw_addr} threshold={args.threshold} min_area={args.min_area}")
+    runtime = PandaRuntime(gateway_udp_addr=gw_addr, luminance_threshold=args.threshold, min_blob_area=args.min_area)
     print("level=INFO event=panda_runtime_ready status=listening_optical_front_end")
 
     max_f = 1 if args.once else None
