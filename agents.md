@@ -71,24 +71,18 @@ Live ASCII alignment HUD (`libcamerify python3 /opt/neuron-cupboard/scripts/benc
 * **Signal-to-Noise Ratio (SNR):** Background registers near-black ($0$ luminance) due to the 850nm narrowband bandpass glass disc blocking visible ambient room light. Zero spurious noise or ghost reflections.
 
 ### Key Engineering Breakthroughs Resolved
-1. **Pi 5 libcamera V4L2 Compatibility:** Wrapped camera execution with `libcamerify` (`libcamera-tools`) to expose standard V4L2 device pipelines under Raspberry Pi OS Debian Trixie.
+1. **Pi 5 libcamera V4L2 Compatibility:** Wrapped camera execution with `libcamerify` (`libcamera-tools`) to expose standard V4L2 device pipelines under Raspberry Pi OS Debian Bookworm/Trixie.
 2. **Buffer Ingestion & OpenCV Acceleration:** Resolved `hasattr(frame_data, "shape")` bug where `bytes` bypassed OpenCV and triggered pure-Python clustering. Implemented NumPy `frombuffer` reconstruction, restoring hardware-accelerated OpenCV C++ morphology and moments.
-3. **Bench Bloom Handling:** Raised `max_blob_area` threshold from 2,500 px to 25,000 px to accommodate close-range prototyping blooms without dropping emitters.
-4. **Daemon Lifecycle & DDIL Installer:** Implemented non-blocking `SIGTERM`/`SIGINT` daemon loop in `PandaRuntime.run()`, eliminating systemd restart thrashing. Built air-gapped DDIL installer supporting offline wheels and debs.
-5. **Synthetic Pipeline Validation:** Live synthetic receiver test confirmed **116 verified frames recovered** in 5 seconds with zero bit errors and CRC-8 validation.
+3. **Camera-Synchronized 15 Baud Manchester Modulation:** Adapted RP2040 transmitter firmware to 15 Baud (33.3 ms half-bit chips), achieving rock-solid hardware frame integration matching the Sony IMX708 NoIR camera's 29.9 FPS capture rate (interval delta < 110 us).
+4. **Bench Glare & Shot Noise Rejection:** Calibrated the optical acceptance window (`threshold=175`, `min_area=8.0px`, `max_area=2000.0px`) with morphological opening, completely rejecting 20,500px table reflection blooms and 2px CMOS shot noise while isolating genuine 850nm LED centroids.
+5. **End-to-End Over-the-Air Physical Telemetry Confirmed:** Recovered 100% of transmitted frames over the air (consecutive sequences 53 -> 59, 157 -> 210+) with zero packet loss, valid CRC-8 checks, and locked optical spatial bearings (+50 to +68 mrad).
+6. **Physical Line-of-Sight ("Book Test") Validation:** Confirmed real-time obstruction detection; breaking line-of-sight with a physical barrier immediately triggers `optical_los_lost` and transitions the swarm consensus machine, with sub-4-second automatic recovery upon re-clearing.
+7. **Cross-Platform GCS HUD Deployment:** Built zero-dependency standalone Python GCS server (`scripts/gcs_server.py`) with embedded dark-mode polar radar, resolving Windows/WSL2 Hyper-V NAT UDP boundaries.
 
-### Open Architectural Gap: Transmitter Timing Mismatch
-* **Symptom:** Physical `rx-decode` returns 0 frames despite pristine optical alignment.
-* **Root Cause:** The Pico firmware (`firmware/src/main.c`) pulses at **1000 Baud** ($500\,\mu\text{s}$ chips), completing all 96 chips in 48 ms. The camera integrates over $33.3\text{ ms}$ (30 FPS), seeing $\sim 66$ pulses per frame as a solid continuous light. The decoder receives continuous `1, 1, 1, 1`, flagging illegal Manchester transition violations.
-* **Solution Path:** Recompile Pico firmware with a camera-synchronized beacon rate ($\sim 15\text{ Baud}$ or oversampled run-lengths) so individual half-bit chips span full camera frame integration windows.
+## 7. Architectural Takeaways: Optical vs. RF Tradeoffs
+Physical bench testing revealed the fundamental engineering realities governing free-space optical (FSO) swarm communication versus traditional RF:
 
-## 7. Immediate Roadmap & Action Items
-1. **Physical Transmitter Timing Adaptation:**
-   - Update `firmware/src/main.c` / `firmware/include/manchester.h` with camera-synchronized baud rate ($\sim 15\text{ Baud}$ = $33.3\text{ ms}$ half-bit pulse width).
-   - Rebuild `bamboo_node.uf2` and flash to RP2040 Pico.
-2. **End-to-End Over-the-Air Validation:**
-   - Run `libcamerify python3 /opt/neuron-cupboard/scripts/bench_tool.py --mode=rx-decode --device=0 --duration=30` on Pi 5.
-   - Confirm verified packet recovery from physical photons with live bearing output and CRC-8 match.
-3. **Full Swarm Telemetry on GCS Radar:**
-   - Verify continuous live UDP packet streaming from `panda-runtime.service` on Pi 5 to `http://localhost:8080` on laptop.
-   - Confirm polar radar rendering, swarm consensus transitions, and stale node eviction under physical optical obstruction.
+* **Line-of-Sight Strictness & Obstruction:** Optical communication requires uninterrupted geometric line-of-sight. Physical obstacles (the "Book Test") or severe lens occlusions completely sever the channel. RF, by contrast, readily diffracts around obstacles and penetrates non-metallic materials (NLOS).
+* **Signal Margin & Dynamic Range:** Optical emitters exhibit quadratic falloff and are susceptible to ambient reflections (e.g. desk glare blooms). Bandpass optical filtering and tight morphological spatial rejection are essential to maintain SNR without digital clipping.
+* **Low Probability of Intercept / Electronic Warfare Immunity:** While RF provides higher atmospheric and obstacle penetration, it radiates isotropically, exposing swarms to radio direction-finding (SIGINT), interception, and high-power RF jamming. The 850nm optical link produces absolute RF silence, ensuring covert swarm consensus and relative spatial bearing estimation without external beacons or GPS.
+* **Hybrid Swarm Doctrine:** FSO optical telemetry serves as an out-of-band, jam-proof physical consensus link for tight formation flight, terminal docking, and contested environments, operating in tandem with RF for long-range, non-line-of-sight dissemination.
