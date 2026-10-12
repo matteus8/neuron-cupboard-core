@@ -119,3 +119,42 @@ class ManchesterDecoder:
         for bit in bits:
             val = (val << 1) | (1 if bit else 0)
         return val & 0xFF
+
+    def get_bitstream_hex(self) -> str:
+        """Convert current bitstream to hex bytes string for live diagnostics."""
+        bits = list(self.bit_stream)
+        bytes_list = []
+        for i in range(0, len(bits) - 7, 8):
+            val = self._bits_to_byte(bits[i : i + 8])
+            bytes_list.append(f"{val:02X}")
+        return " ".join(bytes_list)
+
+    def inspect_stream(self) -> dict:
+        """Inspect bitstream for framing markers and diagnostic health."""
+        bits = list(self.bit_stream)
+        hex_str = self.get_bitstream_hex()
+        preamble_found = False
+        sync_found = False
+        crc_err = None
+
+        for offset in range(len(bits) - 47):
+            p = self._bits_to_byte(bits[offset : offset + 8])
+            if p == nw.PREAMBLE:
+                preamble_found = True
+                s = self._bits_to_byte(bits[offset + 8 : offset + 16])
+                if s == nw.SYNC_WORD:
+                    sync_found = True
+                    payload = bytes([self._bits_to_byte(bits[offset + 16 + i * 8 : offset + 24 + i * 8]) for i in range(3)])
+                    c = self._bits_to_byte(bits[offset + 40 : offset + 48])
+                    exp = nw.crc8(payload)
+                    if c != exp:
+                        crc_err = f"got 0x{c:02X}, expected 0x{exp:02X}"
+                    break
+
+        return {
+            "bit_count": len(bits),
+            "hex": hex_str,
+            "preamble_found": preamble_found,
+            "sync_found": sync_found,
+            "crc_err": crc_err,
+        }

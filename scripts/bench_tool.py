@@ -176,8 +176,10 @@ def run_rx_decoder(device_id: int, duration_sec: int = 10, synthetic: bool = Fal
     chips = nw.encode_manchester(wire)
     chip_idx = 0
 
-    end_time = time.time() + duration_sec
+    start_time = time.time()
+    end_time = start_time + duration_sec
     recovered_count = 0
+    total_frames_captured = 0
 
     try:
         while time.time() < end_time:
@@ -193,11 +195,15 @@ def run_rx_decoder(device_id: int, duration_sec: int = 10, synthetic: bool = Fal
                 time.sleep(0.005)
                 continue
 
+            total_frames_captured += 1
             centroids = tracker.process_frame(frame.data)
             completed_frames = pulse_tracker.update(centroids)
 
             # Live diagnostic feedback on every frame
             if not cam.simulate:
+                elapsed = time.time() - start_time
+                current_fps = total_frames_captured / max(elapsed, 0.001)
+
                 if centroids:
                     # Select largest centroid (primary emitter) for HUD readout
                     c = max(centroids, key=lambda b: b.area)
@@ -208,7 +214,12 @@ def run_rx_decoder(device_id: int, duration_sec: int = 10, synthetic: bool = Fal
                     pulse = "○"
 
                 total_bits = sum(len(t.decoder.bit_stream) for t in pulse_tracker.tracks.values())
-                sys.stdout.write(f"\r[{time.strftime('%H:%M:%S')}] Pulse: {pulse} | {blob_str} | Tracks: {len(pulse_tracker.tracks)} | Bits: {total_bits} | Frames: {recovered_count}")
+                primary_t = max(pulse_tracker.tracks.values(), key=lambda t: len(t.decoder.bit_stream), default=None) if pulse_tracker.tracks else None
+                hex_prev = ""
+                if primary_t and len(primary_t.decoder.bit_stream) >= 8:
+                    hex_prev = f" | Hex: {primary_t.decoder.get_bitstream_hex()[-17:]}"
+
+                sys.stdout.write(f"\r[{time.strftime('%H:%M:%S')}] Pulse: {pulse} | {blob_str} | {current_fps:.1f} FPS | Tracks: {len(pulse_tracker.tracks)} | Bits: {total_bits}{hex_prev} | Frames: {recovered_count}")
                 sys.stdout.flush()
 
             for wire_frame, track in completed_frames:
@@ -227,6 +238,18 @@ def run_rx_decoder(device_id: int, duration_sec: int = 10, synthetic: bool = Fal
         cam.close()
 
     print(f"\nDecoding session complete. Total verified frames recovered: {recovered_count}")
+    if not cam.simulate and total_frames_captured > 0:
+        elapsed = time.time() - start_time
+        print(f"Captured {total_frames_captured} frames in {elapsed:.1f}s ({total_frames_captured / max(elapsed, 0.001):.1f} FPS)")
+        if pulse_tracker.tracks:
+            print("\n--- Optical Track Diagnostic Report ---")
+            for t_id, track in sorted(pulse_tracker.tracks.items()):
+                info = track.decoder.inspect_stream()
+                print(f"  Track #{t_id} at ({track.x:.1f}, {track.y:.1f}) [Az: {track.azimuth_mrad:+d} mrad, El: {track.elevation_mrad:+d} mrad]:")
+                print(f"    Bits: {info['bit_count']} | Hex: {info['hex'] or '(none)'}")
+                print(f"    Preamble (0xAA): {'FOUND' if info['preamble_found'] else 'MISSING'} | Sync (0xD5): {'FOUND' if info['sync_found'] else 'MISSING'}")
+                if info['crc_err']:
+                    print(f"    CRC Check: FAILED ({info['crc_err']})")
 
 
 def main():
