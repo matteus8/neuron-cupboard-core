@@ -1,0 +1,24 @@
+# Neuron Cupboard: Tactical Ground Control Station (GCS) Container
+# Runs standalone dark-mode polar radar HUD and UDP pulse telemetry ingest.
+
+FROM python:3.12-alpine
+
+LABEL org.opencontainers.image.title="Neuron Cupboard GCS" \
+      org.opencontainers.image.description="Tactical Swarm Ground Control Station & Optical Telemetry Ingest" \
+      org.opencontainers.image.source="https://github.com/matteus8/neuron-cupboard-core"
+
+WORKDIR /app
+
+# Copy self-contained zero-dependency GCS server (includes embedded web HUD)
+COPY scripts/gcs_server.py /app/gcs_server.py
+
+# Expose web dashboard HTTP port and UDP optical frame ingest port
+EXPOSE 8080/tcp
+EXPOSE 9092/udp
+
+# Healthcheck against native HTTP endpoint
+HEALTHCHECK --interval=5s --timeout=2s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:8080/healthz || exit 1
+
+ENTRYPOINT ["python3", "/app/gcs_server.py"]
+CMD ["--http", "0.0.0.0:8080", "--listen", "0.0.0.0:9092"]

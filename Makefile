@@ -104,6 +104,7 @@ package-runtime:
 	@cp deploy/systemd/neuron-gateway.service /tmp/panda-pkg/
 	@cp deploy/install_runtime.sh /tmp/panda-pkg/install.sh
 	@cp deploy/install_gateway.sh /tmp/panda-pkg/install_gateway.sh
+	@cp deploy/README_PANDA_RUNTIME.md /tmp/panda-pkg/README.md
 	@chmod +x /tmp/panda-pkg/install.sh /tmp/panda-pkg/install_gateway.sh /tmp/panda-pkg/scripts/*.py /tmp/panda-pkg/scripts/*.sh
 	@tar -czf bin/panda-runtime.tar.gz -C /tmp/panda-pkg .
 	@rm -rf /tmp/panda-pkg
@@ -122,6 +123,7 @@ package-runtime-airgap:
 	@cp deploy/systemd/neuron-gateway.service /tmp/panda-airgap-pkg/
 	@cp deploy/install_runtime.sh /tmp/panda-airgap-pkg/install.sh
 	@cp deploy/install_gateway.sh /tmp/panda-airgap-pkg/install_gateway.sh
+	@cp deploy/README_PANDA_RUNTIME.md /tmp/panda-airgap-pkg/README.md
 	@echo "# Place offline *.whl files in this directory for air-gapped DDIL deployments" > /tmp/panda-airgap-pkg/wheels/README.txt
 	@echo "# Place offline *.deb files in this directory for air-gapped DDIL deployments" > /tmp/panda-airgap-pkg/debs/README.txt
 	@chmod +x /tmp/panda-airgap-pkg/install.sh /tmp/panda-airgap-pkg/install_gateway.sh /tmp/panda-airgap-pkg/scripts/*.py /tmp/panda-airgap-pkg/scripts/*.sh

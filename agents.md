@@ -86,3 +86,12 @@ Physical bench testing revealed the fundamental engineering realities governing 
 * **Signal Margin & Dynamic Range:** Optical emitters exhibit quadratic falloff and are susceptible to ambient reflections (e.g. desk glare blooms). Bandpass optical filtering and tight morphological spatial rejection are essential to maintain SNR without digital clipping.
 * **Low Probability of Intercept / Electronic Warfare Immunity:** While RF provides higher atmospheric and obstacle penetration, it radiates isotropically, exposing swarms to radio direction-finding (SIGINT), interception, and high-power RF jamming. The 850nm optical link produces absolute RF silence, ensuring covert swarm consensus and relative spatial bearing estimation without external beacons or GPS.
 * **Hybrid Swarm Doctrine:** FSO optical telemetry serves as an out-of-band, jam-proof physical consensus link for tight formation flight, terminal docking, and contested environments, operating in tandem with RF for long-range, non-line-of-sight dissemination.
+
+## 8. Next Project Milestone: Mule Zenoh & Tactical Network Gateway
+With physical optical transceivers and edge computer vision fully operational, the upcoming development milestone centers on **tactical multi-transport mesh routing**:
+1. **Zenoh Edge Relay (`gateway/`):**
+   - Translate decoded 6-byte optical frames into Protocol Buffer payloads (`neuron.proto`).
+   - Run `gateway-linux-arm64` on the Raspberry Pi 5 alongside `panda-runtime`.
+2. **Mule Zenoh Mesh Integration:**
+   - Establish ad-hoc peer-to-peer pub/sub routing over constrained wireless IP links using Eclipse Zenoh.
+   - Demonstrate multi-node swarm state convergence across hybrid optical-and-radio topologies.
